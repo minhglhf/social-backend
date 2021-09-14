@@ -25,12 +25,14 @@ import * as timezone from 'dayjs/plugin/timezone';
 import { VIET_NAM_TZ } from 'src/utils/constants';
 import { UsersHelper } from 'src/helpers/users.helper';
 import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
+import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class UsersAuthService {
   constructor(
     private usersService: UsersService,
     private authService: AuthService,
     private usersHelper: UsersHelper,
+    private mailService: MailService,
     @InjectModel(Activation.name)
     private activationModel: Model<ActivationDocument>,
     @InjectModel(PasswordReset.name)
@@ -69,6 +71,11 @@ export class UsersAuthService {
         { email: email },
         { activationCode: activationCode, expireIn: new Date(expireIn) },
         { upsert: true },
+      );
+      await this.mailService.sendConfirmationEmail(
+        email,
+        activationCode,
+        user.displayName,
       );
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -120,6 +127,11 @@ export class UsersAuthService {
         { token: token, expireIn: new Date(expireIn) },
         { upsert: true },
       );
+      await this.mailService.sendPasswordResetEmail(
+        email,
+        token,
+        user.displayName,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -134,7 +146,8 @@ export class UsersAuthService {
     if (!user.isActive) throw new BadRequestException('Account not activated ');
 
     const passwordReset = promises[1];
-    if (!passwordReset) throw new BadRequestException('Reset password failed');
+    if (!passwordReset || !(input.token === passwordReset.token))
+      throw new BadRequestException('Reset password failed');
     dayjs.extend(timezone);
     dayjs.extend(utc);
     const now = dayjs().tz(VIET_NAM_TZ);
