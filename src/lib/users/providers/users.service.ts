@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserProfile } from 'src/dtos/user/userProfile.dto';
@@ -6,6 +11,8 @@ import { UserSignUp } from 'src/dtos/user/userSignup.dto';
 import { User, UserDocument } from 'src/entities/user.entity';
 import { UsersHelper } from 'src/helpers/users.helper';
 import * as bcrypt from 'bcrypt';
+import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
+import { isBuffer } from 'util';
 @Injectable()
 export class UsersService {
   constructor(
@@ -61,6 +68,28 @@ export class UsersService {
     try {
       const salt = await bcrypt.genSalt();
       const hash = await bcrypt.hash(newPassword, salt);
+      await this.userModel.findByIdAndUpdate(userId, { password: hash });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async updateNewPassword(
+    userId: string,
+    changePasswordInput: ChangePasswordInput,
+  ): Promise<void> {
+    try {
+      const user = await this.userModel.findById(userId);
+      if (user) {
+        if (
+          !(await bcrypt.compare(
+            changePasswordInput.currentPassword,
+            user.password,
+          ))
+        )
+          throw new BadRequestException('Mật khẩu hiên tại không đúng');
+      }
+      const salt = await bcrypt.genSalt();
+      const hash = await bcrypt.hash(changePasswordInput.newPassword, salt);
       await this.userModel.findByIdAndUpdate(userId, { password: hash });
     } catch (error) {
       throw new InternalServerErrorException(error);

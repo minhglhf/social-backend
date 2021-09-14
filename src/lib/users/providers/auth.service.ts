@@ -40,7 +40,7 @@ export class UsersAuthService {
   ) {}
   public async signUp(input: UserSignUp): Promise<void> {
     if (await this.usersService.findUserByMail(input.email)) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('Email đã tồn tại');
     }
     const salt = await bcrypt.genSalt();
     input.password = await bcrypt.hash(input.password, salt);
@@ -48,7 +48,7 @@ export class UsersAuthService {
   }
   public async login(payload: JwtPayLoad): Promise<LoginOutput> {
     if (!payload.isActive) {
-      throw new ForbiddenException('Account not activated');
+      throw new ForbiddenException('Tài khoản chưa được kích hoạt');
     }
     const user = await this.usersService.getUserProfile(
       payload.userId.toHexString(),
@@ -57,17 +57,18 @@ export class UsersAuthService {
     return { ...accessToken, ...user };
   }
   public async sendActivationCode(email: string): Promise<void> {
+    const user = await this.usersService.findUserByMail(email);
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại');
+    }
+    if (user.isActive) {
+      throw new BadRequestException('Tài khoản đã được kích hoạt');
+    }
     try {
-      const user = await this.usersService.findUserByMail(email);
-      if (!user) throw new BadRequestException('email dose not exist');
-      if (user.isActive)
-        throw new BadRequestException('The account has been activated');
       dayjs.extend(timezone);
       dayjs.extend(utc);
       const activationCode = this.usersHelper.generateString(10);
       const expireIn = dayjs().tz(VIET_NAM_TZ).add(10, 'day').format();
-      console.log(activationCode);
-
       await this.activationModel.findOneAndUpdate(
         { email: email },
         { activationCode: activationCode, expireIn: new Date(expireIn) },
@@ -95,19 +96,20 @@ export class UsersAuthService {
         this.usersService.findUserByMail(activationInput.email),
       ]);
       const activation = promises[0];
+      if (!promises[1]) throw new BadRequestException('Không tồn tại email');
       if (promises[1].isActive)
-        throw new BadRequestException('The account has been activated ');
+        throw new BadRequestException('Tài khoản đã được kích hoạt');
       if (
         !activation ||
         !(activation.activationCode === activationInput.activationCode)
       ) {
-        throw new BadRequestException('Activation failed');
+        throw new BadRequestException('Kích hoạt thất bại');
       }
       const now = dayjs().tz(VIET_NAM_TZ);
       const expireDate = dayjs(activation.expireIn).tz(VIET_NAM_TZ);
 
       if (now.diff(expireDate) >= 0) {
-        throw new BadRequestException('Activation failed');
+        throw new BadRequestException('Kích hoạt thất bại');
       }
       await this.usersService.activateAccount(activationInput.email);
     } catch (error) {
@@ -115,9 +117,9 @@ export class UsersAuthService {
     }
   }
   public async sendResetLink(email: string): Promise<void> {
+    const user = await this.usersService.findUserByMail(email);
+    if (!user) throw new BadRequestException('Email không tồn tại');
     try {
-      const user = await this.usersService.findUserByMail(email);
-      if (!user) throw new BadRequestException('email dose not exist');
       dayjs.extend(timezone);
       dayjs.extend(utc);
       const token = this.usersHelper.generateString(60);
@@ -138,27 +140,32 @@ export class UsersAuthService {
     }
   }
   public async resetPassword(input: PasswordResetInput): Promise<void> {
-    const promises = await Promise.all([
-      this.usersService.findUserByMail(input.email),
-      this.passwordResetModel.findOne({ email: input.email }),
-    ]);
-    const user = promises[0];
-    if (!user) throw new BadRequestException('Email dose not exist');
-    if (!user.isActive) throw new BadRequestException('Account not activated ');
+    try {
+      const promises = await Promise.all([
+        this.usersService.findUserByMail(input.email),
+        this.passwordResetModel.findOne({ email: input.email }),
+      ]);
+      const user = promises[0];
+      if (!user) throw new BadRequestException('Email không tồn tại');
+      if (!user.isActive)
+        throw new BadRequestException('Tài khoản chưa được kích hoạt');
 
-    const passwordReset = promises[1];
-    if (!passwordReset || !(input.token === passwordReset.token))
-      throw new BadRequestException('Reset password failed');
-    dayjs.extend(timezone);
-    dayjs.extend(utc);
-    const now = dayjs().tz(VIET_NAM_TZ);
-    const expireDate = dayjs(passwordReset.expireIn).tz(VIET_NAM_TZ);
-    if (now.diff(expireDate) >= 0) {
-      throw new BadRequestException('Reset password failed');
+      const passwordReset = promises[1];
+      if (!passwordReset || !(input.token === passwordReset.token))
+        throw new BadRequestException('Đặt lại mật khẩu thất bại');
+      dayjs.extend(timezone);
+      dayjs.extend(utc);
+      const now = dayjs().tz(VIET_NAM_TZ);
+      const expireDate = dayjs(passwordReset.expireIn).tz(VIET_NAM_TZ);
+      if (now.diff(expireDate) >= 0) {
+        throw new BadRequestException('Đặt lại mật khẩu thất bại');
+      }
+      await Promise.all([
+        this.usersService.changePassword((user as any)._id, input.newPassword),
+        this.passwordResetModel.findByIdAndDelete((passwordReset as any)._id),
+      ]);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
     }
-    await Promise.all([
-      this.usersService.changePassword((user as any)._id, input.newPassword),
-      this.passwordResetModel.findByIdAndDelete((passwordReset as any)._id),
-    ]);
   }
 }

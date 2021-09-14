@@ -1,6 +1,7 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards, Request, Put, Body } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
 import { UsersService } from '../providers/users.service';
 
 @ApiTags('User')
@@ -14,5 +15,18 @@ export class UsersController {
   @ApiOperation({ description: 'Lấy thông tin user' })
   async getUserProfile(@Request() req) {
     return this.usersService.getUserProfile(req.user.userId);
+  }
+  @Put('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Đổi mật khẩu' })
+  @ApiBody({ type: ChangePasswordInput })
+  async changePassword(
+    @Body() changePasswordInput: ChangePasswordInput,
+    @Request() req,
+  ) {
+    return this.usersService.updateNewPassword(
+      req.user.userId,
+      changePasswordInput,
+    );
   }
 }

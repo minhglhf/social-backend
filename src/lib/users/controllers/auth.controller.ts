@@ -4,11 +4,9 @@ import {
   Post,
   UseGuards,
   Request,
-  UsePipes,
-  ValidationPipe,
   Put,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import {
   ActivationInput,
@@ -17,7 +15,6 @@ import {
 import { LoginInput } from 'src/dtos/user/login.dto';
 import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
 import { UserSignUp } from 'src/dtos/user/userSignup.dto';
-import { JwtPayLoad } from 'src/utils/types';
 import { UsersAuthService } from '../providers/auth.service';
 
 @ApiTags('Auth')
