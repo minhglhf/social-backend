@@ -5,7 +5,7 @@ import { UserProfile } from 'src/dtos/user/userProfile.dto';
 import { UserSignUp } from 'src/dtos/user/userSignup.dto';
 import { User, UserDocument } from 'src/entities/user.entity';
 import { UsersHelper } from 'src/helpers/users.helper';
-
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
   constructor(
@@ -21,7 +21,17 @@ export class UsersService {
   }
   public async addNewUser(user: UserSignUp): Promise<void> {
     try {
-      await new this.userModel({ ...user, isActive: false }).save();
+      const newUser: Partial<UserDocument> = {
+        email: user.email,
+        password: user.password,
+        displayName: user.displayName,
+        address: '',
+        birthday: null,
+        isActive: false,
+        avatar: '',
+        coverPhoto: '',
+      };
+      await new this.userModel(newUser).save();
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -40,6 +50,18 @@ export class UsersService {
         { email: email },
         { isActive: true },
       );
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async changePassword(
+    userId: string,
+    newPassword: string,
+  ): Promise<void> {
+    try {
+      const salt = await bcrypt.genSalt();
+      const hash = await bcrypt.hash(newPassword, salt);
+      await this.userModel.findByIdAndUpdate(userId, { password: hash });
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

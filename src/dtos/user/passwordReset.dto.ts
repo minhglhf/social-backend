@@ -1,18 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
 
-export class ActivationInput {
+export class PasswordResetInput {
   @ApiProperty({ type: String, required: true })
   @IsString()
   @IsEmail()
   email: string;
   @ApiProperty({ type: String, required: true })
   @IsString()
-  activationCode: string;
-}
-export class SendActivationCodeInput {
+  newPassword: string;
   @ApiProperty({ type: String, required: true })
   @IsString()
-  @IsEmail()
-  email: string;
+  token: string;
 }

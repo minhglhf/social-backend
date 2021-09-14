@@ -24,6 +24,7 @@ import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
 import { VIET_NAM_TZ } from 'src/utils/constants';
 import { UsersHelper } from 'src/helpers/users.helper';
+import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
 @Injectable()
 export class UsersAuthService {
   constructor(
@@ -105,22 +106,45 @@ export class UsersAuthService {
       throw new InternalServerErrorException(error);
     }
   }
-  public async sendVerificationCode(email: string): Promise<void> {
+  public async sendResetLink(email: string): Promise<void> {
     try {
       const user = await this.usersService.findUserByMail(email);
       if (!user) throw new BadRequestException('email dose not exist');
       dayjs.extend(timezone);
       dayjs.extend(utc);
-      const activationCode = this.usersHelper.generateString(10);
+      const token = this.usersHelper.generateString(60);
       const expireIn = dayjs().tz(VIET_NAM_TZ).add(1, 'm').format();
 
       await this.passwordResetModel.findOneAndUpdate(
         { email: email },
-        { verificationCode: activationCode, expireIn: new Date(expireIn) },
+        { token: token, expireIn: new Date(expireIn) },
         { upsert: true },
       );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
+  }
+  public async resetPassword(input: PasswordResetInput): Promise<void> {
+    const promises = await Promise.all([
+      this.usersService.findUserByMail(input.email),
+      this.passwordResetModel.findOne({ email: input.email }),
+    ]);
+    const user = promises[0];
+    if (!user) throw new BadRequestException('Email dose not exist');
+    if (!user.isActive) throw new BadRequestException('Account not activated ');
+
+    const passwordReset = promises[1];
+    if (!passwordReset) throw new BadRequestException('Reset password failed');
+    dayjs.extend(timezone);
+    dayjs.extend(utc);
+    const now = dayjs().tz(VIET_NAM_TZ);
+    const expireDate = dayjs(passwordReset.expireIn).tz(VIET_NAM_TZ);
+    if (now.diff(expireDate) >= 0) {
+      throw new BadRequestException('Reset password failed');
+    }
+    await Promise.all([
+      this.usersService.changePassword((user as any)._id, input.newPassword),
+      this.passwordResetModel.findByIdAndDelete((passwordReset as any)._id),
+    ]);
   }
 }

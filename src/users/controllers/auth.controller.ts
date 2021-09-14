@@ -15,6 +15,7 @@ import {
   SendActivationCodeInput,
 } from 'src/dtos/user/activation.dto';
 import { LoginInput } from 'src/dtos/user/login.dto';
+import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
 import { UserSignUp } from 'src/dtos/user/userSignup.dto';
 import { JwtPayLoad } from 'src/utils/types';
 import { UsersAuthService } from '../providers/auth.service';
@@ -51,12 +52,18 @@ export class UsersAuthController {
   async activateAccount(@Body() activationInput: ActivationInput) {
     return this.usersAuthService.activateAccount(activationInput);
   }
-  @Put('send/verificationCode')
-  @ApiOperation({ description: 'Gửi mã xác nhận để đổi mật khẩu vào mail' })
+  @Put('send/resetlink')
+  @ApiOperation({ description: 'Gửi link đổi mật khẩu có chứa token vào mail' })
   @ApiBody({ type: SendActivationCodeInput })
   async sendVerificationCode(
     @Body() sendActivationCode: SendActivationCodeInput,
   ) {
-    return this.usersAuthService.sendVerificationCode(sendActivationCode.email);
+    return this.usersAuthService.sendResetLink(sendActivationCode.email);
+  }
+  @Put('reset-password')
+  @ApiOperation({ description: 'Đặt lại mật khẩu mới' })
+  @ApiBody({ type: PasswordResetInput })
+  async resetPassword(@Body() passwordResetInput: PasswordResetInput) {
+    return this.usersAuthService.resetPassword(passwordResetInput);
   }
 }

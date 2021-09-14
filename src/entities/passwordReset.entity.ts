@@ -5,7 +5,7 @@ export class PasswordReset {
   @Prop({ type: String, required: true })
   email: string;
   @Prop({ type: String, required: true })
-  verificationCode: string;
+  token: string;
   @Prop({ type: Date, required: true })
   expireIn: Date;
 }
