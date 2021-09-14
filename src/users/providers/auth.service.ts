@@ -66,6 +66,7 @@ export class UsersAuthService {
       dayjs.extend(utc);
       const activationCode = this.usersHelper.generateString(10);
       const expireIn = dayjs().tz(VIET_NAM_TZ).add(10, 'day').format();
+      console.log(activationCode);
 
       await this.activationModel.findOneAndUpdate(
         { email: email },

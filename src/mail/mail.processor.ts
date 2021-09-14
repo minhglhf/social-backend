@@ -48,6 +48,7 @@ export class MailProcessor {
     job: Job<{ email: string; activationCode: string; displayName: string }>,
   ): Promise<any> {
     this.logger.log(`Sending confirmation email to '${job.data.email}'`);
+    console.log(job.data.activationCode);
 
     try {
       const result = await this.mailerService.sendMail({
