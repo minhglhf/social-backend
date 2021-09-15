@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards, Request, Put, Body } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
+import { UserInfoInput } from 'src/dtos/user/userProfile.dto';
 import { UsersService } from '../providers/users.service';
 
 @ApiTags('User')
@@ -28,5 +29,12 @@ export class UsersController {
       req.user.userId,
       changePasswordInput,
     );
+  }
+  @Put('update-info')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Cập nhật thông tin' })
+  @ApiBody({ type: UserInfoInput })
+  async updateInfo(@Body() userInfoInput: UserInfoInput, @Request() req) {
+    return this.usersService.updateInfo(req.user.userId, userInfoInput);
   }
 }

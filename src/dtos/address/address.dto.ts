@@ -6,20 +6,23 @@ export class AddressInput {
     type: Number,
     required: true,
     description: 'id của tỉnh/thành phố',
+    default: -1,
   })
   @IsNumber()
   province: number;
   @ApiProperty({
     type: Number,
-    required: false,
+    required: true,
     description: 'id của quận/huyền',
+    default: -1,
   })
   @IsNumber()
   district: number;
   @ApiProperty({
     type: Number,
-    required: false,
+    required: true,
     description: 'id của xã/phường/thị trấn',
+    default: -1,
   })
   @IsNumber()
   ward: number;
