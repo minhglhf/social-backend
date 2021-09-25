@@ -1,15 +1,46 @@
-import { Controller, Get, UseGuards, Request, Put, Body } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Request,
+  Put,
+  Body,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  UploadedFiles,
+} from '@nestjs/common';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { diskStorage } from 'multer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
-import { UserInfoInput } from 'src/dtos/user/userProfile.dto';
+import {
+  ProfileImageInput,
+  UserInfoInput,
+} from 'src/dtos/user/userProfile.dto';
+import { imageFileFilter, storage } from 'src/helpers/storage.helper';
+import { UploadsService } from 'src/uploads/uploads.service';
 import { UsersService } from '../providers/users.service';
 
 @ApiTags('User')
 @ApiBearerAuth()
 @Controller('user')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private uploadsService: UploadsService,
+  ) {}
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -36,5 +67,45 @@ export class UsersController {
   @ApiBody({ type: UserInfoInput })
   async updateInfo(@Body() userInfoInput: UserInfoInput, @Request() req) {
     return this.usersService.updateInfo(req.user.userId, userInfoInput);
+  }
+  @Post('upload/profile-image')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description:
+      'Cập nhật ảnh đại diện và ảnh bìa, nếu không truyền hoặc truyền null thì không cập nhật',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: ProfileImageInput })
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'avatar', maxCount: 1 },
+        { name: 'coverPhoto', maxCount: 1 },
+      ],
+      {
+        fileFilter: imageFileFilter,
+        storage: storage,
+      },
+    ),
+  )
+  uploadFile(
+    @Request() req,
+    @UploadedFiles()
+      files: {
+      avatar?: Express.Multer.File;
+      coverPhoto?: Express.Multer.File;
+    },
+  ) {
+    if (req.fileValidationError) {
+      throw new BadRequestException(
+        'invalid file provided, [image files allowed]',
+      );
+    }
+
+    return this.usersService.updateProfileImage(
+      req.user.userId,
+      files?.avatar ? files.avatar[0] : null,
+      files?.coverPhoto ? files.coverPhoto[0] : null,
+    );
   }
 }

@@ -5,8 +5,12 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { UserInfoInput, UserProfile } from 'src/dtos/user/userProfile.dto';
+import { Model, Types } from 'mongoose';
+import {
+  ProfileImageOutPut,
+  UserInfoInput,
+  UserProfile,
+} from 'src/dtos/user/userProfile.dto';
 import { UserSignUp } from 'src/dtos/user/userSignup.dto';
 import { User, UserDocument } from 'src/entities/user.entity';
 import { UsersHelper } from 'src/helpers/users.helper';
@@ -16,12 +20,14 @@ import { AddressesService } from 'src/lib/addresses/addresses.service';
 import { Province } from 'src/entities/province.entity';
 import { Ward } from 'src/entities/ward.entity';
 import { District } from 'src/entities/district.entity';
+import { UploadsService } from 'src/uploads/uploads.service';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private addressesService: AddressesService,
     private usersHelper: UsersHelper,
+    private uploadsService: UploadsService,
   ) {}
   public async findUserByMail(email: string): Promise<UserDocument> {
     try {
@@ -176,6 +182,68 @@ export class UsersService {
           });
         }
       }
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async updateProfileImage(
+    userId: Types.ObjectId,
+    avatar: Express.Multer.File,
+    coverPhoto: Express.Multer.File,
+  ): Promise<ProfileImageOutPut> {
+    try {
+      let coverPhotoUrl = '';
+      let avatarUrl = '';
+      const coverPhotoPath = `images/coverPhoto/${userId}${this.usersHelper.generateString(
+        15,
+      )}`;
+      const avatarPath = `images/avatar/${userId}${this.usersHelper.generateString(
+        15,
+      )}`;
+      if (!avatar && coverPhoto) {
+        const promises = await Promise.all([
+          await this.uploadsService.uploadImageFile(coverPhoto, coverPhotoPath),
+          await this.userModel.findByIdAndUpdate(
+            userId,
+            { coverPhoto: coverPhotoUrl },
+            { upsert: true },
+          ),
+        ]);
+        coverPhotoUrl = promises[0];
+      } else if (avatar && !coverPhoto) {
+        const promises = await Promise.all([
+          this.uploadsService.uploadImageFile(avatar, avatarPath),
+          this.userModel.findByIdAndUpdate(
+            userId,
+            { avatar: avatarUrl },
+            { upsert: true },
+          ),
+        ]);
+        avatarUrl = promises[0];
+      } else if (avatar && coverPhoto) {
+        const promises = await Promise.all([
+          this.uploadsService.uploadImageFile(coverPhoto, coverPhotoPath),
+          this.uploadsService.uploadImageFile(avatar, avatarPath),
+        ]);
+        coverPhotoUrl = promises[0];
+        avatarUrl = promises[1];
+        await Promise.all([
+          this.userModel.findByIdAndUpdate(
+            userId,
+            { coverPhoto: coverPhotoUrl },
+            { upsert: true },
+          ),
+          this.userModel.findByIdAndUpdate(
+            userId,
+            { avatar: avatarUrl },
+            { upsert: true },
+          ),
+        ]);
+      }
+      return {
+        avatar: avatarUrl,
+        coverPhoto: coverPhotoUrl,
+      };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

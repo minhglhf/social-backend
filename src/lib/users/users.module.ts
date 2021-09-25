@@ -7,8 +7,10 @@ import {
   PasswordResetSchema,
 } from 'src/entities/passwordReset.entity';
 import { User, UserSchema } from 'src/entities/user.entity';
+
 import { UsersHelper } from 'src/helpers/users.helper';
 import { MailModule } from 'src/mail/mai.module';
+import { UploadsModule } from 'src/uploads/uploads.module';
 import { AddressesModule } from '../addresses/addresses.module';
 import { UsersAuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
@@ -34,6 +36,7 @@ import { UsersService } from './providers/users.service';
     forwardRef(() => AuthModule),
     MailModule,
     AddressesModule,
+    UploadsModule,
   ],
   controllers: [UsersAuthController, UsersController],
   providers: [UsersService, UsersAuthService, UsersHelper],
