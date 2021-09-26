@@ -42,6 +42,7 @@ export class UsersService {
         email: user.email,
         password: user.password,
         displayName: user.displayName,
+        displayNameNoTone: this.usersHelper.removeTone(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
         isActive: false,
@@ -247,5 +248,17 @@ export class UsersService {
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
+  }
+  public async getUserSearchList(search: string): Promise<UserDocument[]> {
+    const globalRegex = new RegExp(
+      '(^' + search + ')' + '|' + '( +' + search + '[a-zA-z]*' + ')',
+      'i',
+    );
+    return await this.userModel
+      .find({
+        displayNameNoTone: { $regex: globalRegex },
+        isActive: true,
+      })
+      .sort({ displayName: 1 });
   }
 }

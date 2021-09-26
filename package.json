@@ -39,6 +39,7 @@
     "firebase": "^9.1.0",
     "firebase-admin": "^9.11.1",
     "handlebars": "^4.7.7",
+    "migrate-mongo": "^8.2.3",
     "mongoose": "^5.13.9",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",

@@ -10,6 +10,8 @@ import {
   UploadedFile,
   BadRequestException,
   UploadedFiles,
+  Query,
+  Param,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -20,6 +22,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
@@ -107,5 +110,11 @@ export class UsersController {
       files?.avatar ? files.avatar[0] : null,
       files?.coverPhoto ? files.coverPhoto[0] : null,
     );
+  }
+  @Get('search/users')
+  @ApiOperation({ description: 'Tìm kiếm người dùng' })
+  @ApiQuery({ type: String, name: 'displayName' })
+  async searchUsers(@Query('displayName') displayName: string) {
+    return this.usersService.getUserSearchList(displayName);
   }
 }
