@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEmail,
+  IsIn,
   IsInt,
   isNotEmpty,
   IsNotEmpty,
@@ -35,7 +36,6 @@ export class UserSignUp {
     description: 'Giới tính 0: nữ, 1: nam, 2: khác',
   })
   @IsInt()
-  @Max(2)
-  @Min(0)
+  @IsIn([0, 1, 2])
   sex: number;
 }

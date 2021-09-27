@@ -9,22 +9,22 @@ export class UsersHelper {
     user: UserDocument,
     isCurrentUser: boolean,
   ): UserProfile {
-    const province = user.address.province as unknown as ProvinceDocument;
-    const district = user.address.district as unknown as DistrictDocument;
-    const ward = user.address.ward as unknown as WardDocument;
+    const province = user.address?.province as unknown as ProvinceDocument;
+    const district = user.address?.district as unknown as DistrictDocument;
+    const ward = user.address?.ward as unknown as WardDocument;
     let sex = '';
     switch (user.sex) {
-    case 0:
-      sex = 'nữ';
-      break;
-    case 1:
-      sex = 'nam';
-      break;
-    case 2:
-      sex = 'khác';
-      break;
-    default:
+      case 0:
+        sex = 'Nữ';
         break;
+      case 1:
+        sex = 'Nam';
+        break;
+      case 2:
+        sex = 'Khác';
+        break;
+      default:
+      break;
     }
     return {
       email: user.email,
@@ -33,9 +33,15 @@ export class UsersHelper {
       avatar: user.avatar,
       coverPhoto: user.coverPhoto,
       address: {
-        province: province?.name,
-        district: district?.name,
-        ward: ward?.name,
+        province: {
+          _id: province ? province._id : -1,
+          name: province ? province.name : '',
+        },
+        district: {
+          _id: district ? district._id : -1,
+          name: district ? district.name : '',
+        },
+        ward: { _id: ward ? ward._id : -1, name: ward ? ward.name : '' },
       },
       sex: sex,
       followers: user.followers,

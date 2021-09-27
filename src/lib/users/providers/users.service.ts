@@ -1,5 +1,4 @@
 import {
-  BadGatewayException,
   BadRequestException,
   Injectable,
   InternalServerErrorException,
@@ -21,7 +20,6 @@ import { Province } from 'src/entities/province.entity';
 import { Ward } from 'src/entities/ward.entity';
 import { District } from 'src/entities/district.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
-import { StringFormat } from '@firebase/storage';
 @Injectable()
 export class UsersService {
   constructor(
@@ -65,9 +63,10 @@ export class UsersService {
     try {
       const user = await this.userModel
         .findById(userId)
-        .populate('address.province', ['name'], Province.name)
-        .populate('address.district', ['name'], District.name)
-        .populate('address.ward', ['name'], Ward.name);
+        .populate('address.province', ['_id', 'name'], Province.name)
+        .populate('address.district', ['_id', 'name'], District.name)
+        .populate('address.ward', ['_id', 'name'], Ward.name);
+
       return this.usersHelper.mapToUserProfile(user, currentUserId === userId);
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -120,76 +119,28 @@ export class UsersService {
   public async updateInfo(
     userId: string,
     userInfoInput: UserInfoInput,
-  ): Promise<void> {
+  ): Promise<UserProfile> {
     if (!userInfoInput) return;
     try {
+      const sex = userInfoInput.sex;
       const birthday = userInfoInput.birthday;
       const address = userInfoInput.address;
-      if (birthday) {
-        await this.userModel.findByIdAndUpdate(userId, {
-          birthday: new Date(birthday),
-        });
-      }
-      if (address) {
-        if (address.province > 0) {
-          if (
-            !(await this.addressesService.isValidProvince(address.province))
-          ) {
-            throw new BadRequestException('Invalid province');
-          }
-          if (address.district > 0) {
-            if (
-              !(await this.addressesService.isValidDistrict(
-                address.district,
-                address.province,
-              ))
-            ) {
-              throw new BadRequestException('Invalid district');
-            }
-            if (address.ward > 0) {
-              if (
-                !(await this.addressesService.isValidWard(
-                  address.ward,
-                  address.province,
-                  address.district,
-                ))
-              )
-                throw new BadRequestException('Invalid ward');
-              await this.userModel.findByIdAndUpdate(userId, {
-                address: {
-                  province: address.province,
-                  district: address.district,
-                  ward: address.ward,
-                },
-              });
-            } else {
-              await this.userModel.findByIdAndUpdate(userId, {
-                address: {
-                  province: address.province,
-                  district: address.district,
-                  ward: -1,
-                },
-              });
-            }
-          } else {
-            await this.userModel.findByIdAndUpdate(userId, {
-              address: {
-                province: address.province,
-                district: -1,
-                ward: -1,
-              },
-            });
-          }
-        } else {
-          await this.userModel.findByIdAndUpdate(userId, {
-            address: {
-              province: -1,
-              district: -1,
-              ward: -1,
-            },
-          });
-        }
-      }
+      if (!(await this.addressesService.isValidAddress(userInfoInput.address)))
+        throw new BadRequestException('This address is not available');
+      const user = await this.userModel
+        .findByIdAndUpdate(
+          userId,
+          {
+            birthday: new Date(birthday),
+            address: address,
+            sex: sex,
+          },
+          { new: true },
+        )
+        .populate('address.province', ['_id', 'name'], Province.name)
+        .populate('address.district', ['_id', 'name'], District.name)
+        .populate('address.ward', ['_id', 'name'], Ward.name);
+      return this.usersHelper.mapToUserProfile(user, true);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

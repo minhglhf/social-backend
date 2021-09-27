@@ -67,7 +67,6 @@ export class FollowingsController {
     @Query('pageNumber') pageNumber: number,
   ) {
     if (!userId) userId = req.user.userId.toString();
-    console.log(userId);
 
     return this.followingsService.getFollowings(userId, pageNumber);
   }

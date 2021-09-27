@@ -20,9 +20,4 @@ export class LoginOutput {
   birthday: Date;
   avatar: string;
   coverPhoto: string;
-  address: {
-    province: string;
-    district: string;
-    ward: string;
-  };
 }
