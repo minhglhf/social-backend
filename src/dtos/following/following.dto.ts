@@ -10,14 +10,10 @@ export class FollowingInput {
 }
 
 export class FollowingsOutput {
-  followingId: string;
-  displayName: string;
-  avatar: string;
-}
-
-export class FollowersOutput {
-  followerId: string;
+  userId: string;
   displayName: string;
   avatar: string;
   followed: boolean;
+  isCurrentUser: boolean;
 }
+

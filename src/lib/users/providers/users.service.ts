@@ -61,6 +61,7 @@ export class UsersService {
     userId: string,
   ): Promise<UserProfile> {
     try {
+      userId = userId.trim();
       const user = await this.userModel
         .findById(userId)
         .populate('address.province', ['_id', 'name'], Province.name)

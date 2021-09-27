@@ -8,10 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
-import {
-  FollowersOutput,
-  FollowingsOutput,
-} from 'src/dtos/following/following.dto';
+import { FollowingsOutput } from 'src/dtos/following/following.dto';
 import { Following, FollowingDocument } from 'src/entities/following.entity';
 import { UserDocument } from 'src/entities/user.entity';
 import { UsersService } from 'src/lib/users/providers/users.service';
@@ -29,7 +26,8 @@ export class FollowingsService {
     followingId: string,
   ): Promise<void> {
     try {
-      followingId.trim();
+      followingId = followingId.trim();
+      if (userId === followingId) return;
       const following = await this.followingModel.findOne({
         user: Types.ObjectId(userId),
         following: Types.ObjectId(followingId),
@@ -53,12 +51,14 @@ export class FollowingsService {
   }
   public async unFollow(userId: string, followingId: string): Promise<void> {
     try {
+      followingId = followingId.trim();
+      if (userId === followingId) return;
       const followingDelete = await this.followingModel.findOneAndDelete({
         user: Types.ObjectId(userId),
         following: Types.ObjectId(followingId),
       });
       if (!followingDelete) {
-        throw new BadRequestException('You haven\'t followed this person yet');
+        throw new BadRequestException("You haven't followed this person yet");
       }
 
       await Promise.all([
@@ -72,50 +72,79 @@ export class FollowingsService {
   public async getFollowings(
     userId: string,
     pageNumber: number,
+    currentUserId: string,
   ): Promise<FollowingsOutput[]> {
+    userId = userId.trim();
+    let followings: FollowingDocument[];
+    let followingsIds: string[];
     const perPage = FOLLOWINGS_PER_PAGE;
     const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * perPage;
-    const followings = await this.followingModel
-      .find({
-        user: Types.ObjectId(userId),
-      })
-      .populate('following', ['displayName', 'avatar'])
-      .skip(skip)
-      .limit(perPage);
+    if (userId !== currentUserId) {
+      const promises = await Promise.all([
+        this.followingModel
+          .find({
+            user: Types.ObjectId(userId),
+          })
+          .populate('following', ['displayName', 'avatar'])
+          .skip(skip)
+          .limit(perPage),
+        this.getFollowingIds(currentUserId),
+      ]);
+      followings = promises[0];
+      followingsIds = promises[1];
+    } else {
+      followings = await this.followingModel
+        .find({
+          user: Types.ObjectId(userId),
+        })
+        .populate('following', ['displayName', 'avatar'])
+        .skip(skip)
+        .limit(perPage);
+    }
     return followings.map((i) => {
       const user = i.following as unknown as any;
+      let followed = true;
+      if (userId !== currentUserId) {
+        followed = followingsIds.includes(user._id.toString());
+      }
       return {
-        followingId: user._id.toString(),
+        userId: user._id.toString(),
         displayName: user.displayName,
         avatar: user.avatar,
+        followed: followed,
+        isCurrentUser: currentUserId === user._id.toString(),
       };
     });
   }
   public async getFollowers(
     userId: string,
     pageNumber: number,
-  ): Promise<FollowersOutput[]> {
+    currentUserId: string,
+  ): Promise<FollowingsOutput[]> {
     try {
+      userId = userId.trim();
       const perPage = FOLLOWERS_PER_PAGE;
       const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * perPage;
-      const followings = await this.followingModel
-        .find({
-          following: Types.ObjectId(userId),
-        })
-        .populate('user', ['displayName', 'avatar'])
-        .skip(skip)
-        .limit(perPage);
-      const followerIds: Types.ObjectId[] = followings.map((i) => {
-        return i.user;
-      });
-      const followingIds = await this.getFollowingIds(userId, followerIds);
+      const promises = await Promise.all([
+        this.followingModel
+          .find({
+            following: Types.ObjectId(userId),
+          })
+          .populate('user', ['displayName', 'avatar'])
+          .skip(skip)
+          .limit(perPage),
+        this.getFollowingIds(currentUserId),
+      ]);
+      const followings = promises[0];
+      const followingIds = promises[1];
       return followings.map((i) => {
         const user = i.user as unknown as any;
         return {
-          followerId: user._id.toHexString(),
+          userId: user._id.toHexString(),
           displayName: user.displayName,
           avatar: user.avatar,
-          followed: user && followingIds.includes(user._id),
+          followed: followingIds.includes(user._id.toString()),
+          isCurrentUser: currentUserId === user._id.toString(),
         };
       });
     } catch (error) {
@@ -125,7 +154,7 @@ export class FollowingsService {
   public async getFollowingIds(
     userId: string,
     followerIds?: Types.ObjectId[],
-  ): Promise<Types.ObjectId[]> {
+  ): Promise<string[]> {
     let followings;
     if (!followerIds) {
       followings = await this.followingModel.find({
@@ -137,6 +166,6 @@ export class FollowingsService {
         following: { $in: followerIds },
       });
     }
-    return followings.map((i) => i.following);
+    return followings.map((i) => i.following.toString());
   }
 }

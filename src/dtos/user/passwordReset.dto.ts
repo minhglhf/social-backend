@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsEmail, IsString, Matches } from 'class-validator';
+import { PASSWORD_REGEX } from 'src/utils/constants';
 
 export class PasswordResetInput {
   @ApiProperty({ type: String, required: true })
   @IsEmail()
   email: string;
   @ApiProperty({ type: String, required: true })
-  @Matches(/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{7,15}$/, {
+  @Matches(PASSWORD_REGEX, {
     message: 'Invalid password',
   })
   newPassword: string;

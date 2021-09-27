@@ -67,11 +67,14 @@ export class FollowingsController {
     @Query('pageNumber') pageNumber: number,
   ) {
     if (!userId) userId = req.user.userId.toString();
-
-    return this.followingsService.getFollowings(userId, pageNumber);
+    return this.followingsService.getFollowings(
+      userId,
+      pageNumber,
+      req.user.userId,
+    );
   }
-  @Get('get/followers/:userId')
-  @ApiParam({
+  @Get('get/followers')
+  @ApiQuery({
     type: String,
     name: 'userId',
     required: false,
@@ -90,10 +93,14 @@ export class FollowingsController {
   })
   async getFollowers(
     @Request() req,
-    @Param('userId') userId: string,
+    @Query('userId') userId: string,
     @Query('pageNumber') pageNumber: number,
   ) {
     if (!userId) userId = req.user.userId;
-    return this.followingsService.getFollowers(userId, pageNumber);
+    return this.followingsService.getFollowers(
+      userId,
+      pageNumber,
+      req.user.userId,
+    );
   }
 }
