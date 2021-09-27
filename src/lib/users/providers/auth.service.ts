@@ -45,14 +45,15 @@ export class UsersAuthService {
     const salt = await bcrypt.genSalt();
     input.password = await bcrypt.hash(input.password, salt);
     await this.usersService.addNewUser(input);
-    await this.sendActivationCode(input.email);
+    //await this.sendActivationCode(input.email);
   }
   public async login(payload: JwtPayLoad): Promise<LoginOutput> {
     if (!payload.isActive) {
       throw new ForbiddenException('Tài khoản chưa được kích hoạt');
     }
     const user = await this.usersService.getUserProfile(
-      payload.userId.toHexString(),
+      payload.userId.toString(),
+      payload.userId.toString(),
     );
     const accessToken = await this.authService.generateAcessToken(payload);
     return { ...accessToken, ...user };

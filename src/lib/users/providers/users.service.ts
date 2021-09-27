@@ -21,6 +21,7 @@ import { Province } from 'src/entities/province.entity';
 import { Ward } from 'src/entities/ward.entity';
 import { District } from 'src/entities/district.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
+import { StringFormat } from '@firebase/storage';
 @Injectable()
 export class UsersService {
   constructor(
@@ -45,23 +46,29 @@ export class UsersService {
         displayNameNoTone: this.usersHelper.removeTone(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
-        isActive: false,
+        isActive: true,
         avatar: '',
         coverPhoto: '',
+        sex: user.sex,
+        followers: 0,
+        followings: 0,
       };
       await new this.userModel(newUser).save();
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
   }
-  public async getUserProfile(userId: string): Promise<UserProfile> {
+  public async getUserProfile(
+    currentUserId: string,
+    userId: string,
+  ): Promise<UserProfile> {
     try {
       const user = await this.userModel
         .findById(userId)
         .populate('address.province', ['name'], Province.name)
         .populate('address.district', ['name'], District.name)
         .populate('address.ward', ['name'], Ward.name);
-      return this.usersHelper.mapToUserProfile(user);
+      return this.usersHelper.mapToUserProfile(user, currentUserId === userId);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -250,15 +257,37 @@ export class UsersService {
     }
   }
   public async getUserSearchList(search: string): Promise<UserDocument[]> {
+    const address = { province: 2, district: -1, ward: -1 };
     const globalRegex = new RegExp(
       '(^' + search + ')' + '|' + '( +' + search + '[a-zA-z]*' + ')',
       'i',
     );
     return await this.userModel
-      .find({
-        displayNameNoTone: { $regex: globalRegex },
-        isActive: true,
-      })
-      .sort({ displayName: 1 });
+      .find({ displayNameNoTone: { $regex: globalRegex } })
+      .sort({ displayNameNoTone: 1 });
+  }
+  public async updateFollowers(
+    userId: Types.ObjectId,
+    update: number,
+  ): Promise<void> {
+    try {
+      await this.userModel.findByIdAndUpdate(userId, {
+        $inc: { followers: update },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async updateFollowings(
+    userId: Types.ObjectId,
+    update: number,
+  ): Promise<void> {
+    try {
+      await this.userModel.findByIdAndUpdate(userId, {
+        $inc: { followings: update },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 }

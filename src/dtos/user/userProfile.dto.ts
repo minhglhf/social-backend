@@ -27,6 +27,10 @@ export class UserProfile {
     district: string;
     ward: string;
   };
+  sex: string;
+  followers: number;
+  followings: number;
+  isCurrentUser: boolean;
 }
 export class ProfileImageInput {
   @ApiProperty({ type: 'file', required: false })

@@ -31,8 +31,14 @@ export class User {
     district: number;
     ward: number;
   };
+  @Prop({ type: Number, required: true })
+  sex: number;
+  @Prop({ type: Number, required: true })
+  followings: number;
+  @Prop({ type: Number, required: true })
+  followers: number;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 export type UserDocument = Document & User;
-UserSchema.index({ displayNameNoTone: 1, isActive: 1 });
+UserSchema.index({ displayNameNoTone: 1, isActive: 1, _id: 1 });
 UserSchema.index({ displayName: 1 });

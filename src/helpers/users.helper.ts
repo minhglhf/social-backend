@@ -5,10 +5,27 @@ import { UserDocument } from 'src/entities/user.entity';
 import { WardDocument } from 'src/entities/ward.entity';
 
 export class UsersHelper {
-  public mapToUserProfile(user: UserDocument): UserProfile {
+  public mapToUserProfile(
+    user: UserDocument,
+    isCurrentUser: boolean,
+  ): UserProfile {
     const province = user.address.province as unknown as ProvinceDocument;
     const district = user.address.district as unknown as DistrictDocument;
     const ward = user.address.ward as unknown as WardDocument;
+    let sex = '';
+    switch (user.sex) {
+    case 0:
+      sex = 'nữ';
+      break;
+    case 1:
+      sex = 'nam';
+      break;
+    case 2:
+      sex = 'khác';
+      break;
+    default:
+        break;
+    }
     return {
       email: user.email,
       displayName: user.displayName,
@@ -20,6 +37,10 @@ export class UsersHelper {
         district: district?.name,
         ward: ward?.name,
       },
+      sex: sex,
+      followers: user.followers,
+      followings: user.followings,
+      isCurrentUser: isCurrentUser,
     };
   }
   public generateString(length: number) {

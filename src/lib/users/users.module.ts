@@ -12,6 +12,7 @@ import { UsersHelper } from 'src/helpers/users.helper';
 import { MailModule } from 'src/mail/mai.module';
 import { UploadsModule } from 'src/uploads/uploads.module';
 import { AddressesModule } from '../addresses/addresses.module';
+import { FollowingsModule } from '../followings/followings.module';
 import { UsersAuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersAuthService } from './providers/auth.service';
@@ -37,6 +38,7 @@ import { UsersService } from './providers/users.service';
     MailModule,
     AddressesModule,
     UploadsModule,
+    forwardRef(() => FollowingsModule),
   ],
   controllers: [UsersAuthController, UsersController],
   providers: [UsersService, UsersAuthService, UsersHelper],

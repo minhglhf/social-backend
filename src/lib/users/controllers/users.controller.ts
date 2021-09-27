@@ -46,10 +46,18 @@ export class UsersController {
   ) {}
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @ApiQuery({
+    type: String,
+    name: 'userId',
+    required: false,
+    description:
+      'Id của user muốn lấy profile, nếu muốn lấy thông tin của current user có thể ko truyền cũng được',
+  })
   @ApiBearerAuth()
   @ApiOperation({ description: 'Lấy thông tin user' })
-  async getUserProfile(@Request() req) {
-    return this.usersService.getUserProfile(req.user.userId);
+  async getUserProfile(@Request() req, @Query('userId') userId: string) {
+    if (!userId) userId = req.user.userId.toString();
+    return this.usersService.getUserProfile(req.user.userId, userId);
   }
   @Put('change-password')
   @UseGuards(JwtAuthGuard)
@@ -94,7 +102,7 @@ export class UsersController {
   uploadFile(
     @Request() req,
     @UploadedFiles()
-      files: {
+    files: {
       avatar?: Express.Multer.File;
       coverPhoto?: Express.Multer.File;
     },
