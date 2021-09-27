@@ -23,15 +23,17 @@ import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
 import { VIET_NAM_TZ } from 'src/utils/constants';
-import { UsersHelper } from 'src/helpers/users.helper';
 import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
 import { MailService } from 'src/mail/mail.service';
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
+import { MapsHelper } from 'src/helpers/maps.helper';
 @Injectable()
 export class UsersAuthService {
   constructor(
     private usersService: UsersService,
     private authService: AuthService,
-    private usersHelper: UsersHelper,
+    private stringHandlersHelper: StringHandlersHelper,
+    private mapsHelpler: MapsHelper,
     private mailService: MailService,
     @InjectModel(Activation.name)
     private activationModel: Model<ActivationDocument>,
@@ -45,7 +47,7 @@ export class UsersAuthService {
     const salt = await bcrypt.genSalt();
     input.password = await bcrypt.hash(input.password, salt);
     await this.usersService.addNewUser(input);
-    //await this.sendActivationCode(input.email);
+    await this.sendActivationCode(input.email);
   }
   public async login(payload: JwtPayLoad): Promise<LoginOutput> {
     if (!payload.isActive) {
@@ -55,8 +57,10 @@ export class UsersAuthService {
       payload.userId.toString(),
       payload.userId.toString(),
     );
-    const accessToken = await this.authService.generateAcessToken(payload);
-    return { ...accessToken, ...user };
+    const accessToken = await (
+      await this.authService.generateAcessToken(payload)
+    ).accessToken;
+    return this.mapsHelpler.mapToLoginOutput(accessToken, user);
   }
   public async sendActivationCode(email: string): Promise<void> {
     const user = await this.usersService.findUserByMail(email);
@@ -69,7 +73,7 @@ export class UsersAuthService {
     try {
       dayjs.extend(timezone);
       dayjs.extend(utc);
-      const activationCode = this.usersHelper.generateString(10);
+      const activationCode = this.stringHandlersHelper.generateString(10);
       const expireIn = dayjs().tz(VIET_NAM_TZ).add(10, 'day').format();
       await this.activationModel.findOneAndUpdate(
         { email: email },
@@ -124,7 +128,7 @@ export class UsersAuthService {
     try {
       dayjs.extend(timezone);
       dayjs.extend(utc);
-      const token = this.usersHelper.generateString(60);
+      const token = this.stringHandlersHelper.generateString(60);
       const expireIn = dayjs().tz(VIET_NAM_TZ).add(1, 'm').format();
 
       await this.passwordResetModel.findOneAndUpdate(

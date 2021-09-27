@@ -12,7 +12,6 @@ import {
 } from 'src/dtos/user/userProfile.dto';
 import { UserSignUp } from 'src/dtos/user/userSignup.dto';
 import { User, UserDocument } from 'src/entities/user.entity';
-import { UsersHelper } from 'src/helpers/users.helper';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
 import { AddressesService } from 'src/lib/addresses/addresses.service';
@@ -20,13 +19,21 @@ import { Province } from 'src/entities/province.entity';
 import { Ward } from 'src/entities/ward.entity';
 import { District } from 'src/entities/district.entity';
 import { UploadsService } from 'src/uploads/uploads.service';
+import { FollowingsService } from 'src/lib/followings/providers/followings.service';
+import { SEARCH_USER_PER_PAGE } from 'src/utils/constants';
+import { Following } from 'src/entities/following.entity';
+import { FollowingsOutput } from 'src/dtos/following/following.dto';
+import { MapsHelper } from 'src/helpers/maps.helper';
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private addressesService: AddressesService,
-    private usersHelper: UsersHelper,
+    private mapsHelper: MapsHelper,
+    private stringHandlers: StringHandlersHelper,
     private uploadsService: UploadsService,
+    private followingsService: FollowingsService,
   ) {}
   public async findUserByMail(email: string): Promise<UserDocument> {
     try {
@@ -41,7 +48,7 @@ export class UsersService {
         email: user.email,
         password: user.password,
         displayName: user.displayName,
-        displayNameNoTone: this.usersHelper.removeTone(user.displayName),
+        displayNameNoTone: this.stringHandlers.removeTone(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
         isActive: true,
@@ -66,9 +73,9 @@ export class UsersService {
         .findById(userId)
         .populate('address.province', ['_id', 'name'], Province.name)
         .populate('address.district', ['_id', 'name'], District.name)
-        .populate('address.ward', ['_id', 'name'], Ward.name);
-
-      return this.usersHelper.mapToUserProfile(user, currentUserId === userId);
+        .populate('address.ward', ['_id', 'name'], Ward.name)
+        .select(['-password', '-__v']);
+      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -141,7 +148,7 @@ export class UsersService {
         .populate('address.province', ['_id', 'name'], Province.name)
         .populate('address.district', ['_id', 'name'], District.name)
         .populate('address.ward', ['_id', 'name'], Ward.name);
-      return this.usersHelper.mapToUserProfile(user, true);
+      return this.mapsHelper.mapToUserProfile(user, true);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -154,10 +161,10 @@ export class UsersService {
     try {
       let coverPhotoUrl = '';
       let avatarUrl = '';
-      const coverPhotoPath = `images/coverPhoto/${userId}${this.usersHelper.generateString(
+      const coverPhotoPath = `images/coverPhoto/${userId}${this.stringHandlers.generateString(
         15,
       )}`;
-      const avatarPath = `images/avatar/${userId}${this.usersHelper.generateString(
+      const avatarPath = `images/avatar/${userId}${this.stringHandlers.generateString(
         15,
       )}`;
       if (!avatar && coverPhoto) {
@@ -208,15 +215,54 @@ export class UsersService {
       throw new InternalServerErrorException(error);
     }
   }
-  public async getUserSearchList(search: string): Promise<UserDocument[]> {
-    const address = { province: 2, district: -1, ward: -1 };
+  public async getUserSearchList(
+    userId: string,
+    search: string,
+    pageNumber: number,
+  ): Promise<FollowingsOutput[]> {
+    search = search.trim();
+    if (!search) return [];
+    let limit = SEARCH_USER_PER_PAGE;
+    let skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;
     const globalRegex = new RegExp(
       '(^' + search + ')' + '|' + '( +' + search + '[a-zA-z]*' + ')',
       'i',
     );
-    return await this.userModel
-      .find({ displayNameNoTone: { $regex: globalRegex } })
-      .sort({ displayNameNoTone: 1 });
+    const followingIds = await this.followingsService.getFollowingIds(userId);
+    let followings: UserDocument[] = [];
+    if (skip < followingIds.length) {
+      followings = await this.userModel
+        .find({
+          displayNameNoTone: { $regex: globalRegex },
+          _id: { $in: followingIds },
+        })
+        .sort({ displayNameNoTone: 1 })
+        .select(['displayName', 'avatar'])
+        .skip(skip)
+        .limit(limit);
+
+      if (followings.length < limit) {
+        skip = 0;
+        limit = limit - followings.length;
+      } else {
+        return this.mapsHelper.mapToFollowingsOuput(
+          followings,
+          followingIds,
+          userId,
+        );
+      }
+    }
+    const rest = await this.userModel
+      .find({
+        displayNameNoTone: { $regex: globalRegex },
+        _id: { $nin: followingIds },
+      })
+      .sort({ displayNameNoTone: 1 })
+      .select(['displayName', 'avatar'])
+      .skip(skip)
+      .limit(limit);
+    const result = followings.concat(rest);
+    return this.mapsHelper.mapToFollowingsOuput(result, followingIds, userId);
   }
   public async updateFollowers(
     userId: Types.ObjectId,

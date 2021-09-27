@@ -43,7 +43,7 @@ export class UserInfoInput {
 export class UserProfile {
   email: string;
   displayName: string;
-  birthday: Date;
+  birthday: string;
   avatar: string;
   coverPhoto: string;
   address: {
@@ -55,6 +55,7 @@ export class UserProfile {
   followers: number;
   followings: number;
   isCurrentUser: boolean;
+  createdAt: string;
 }
 export class ProfileImageInput {
   @ApiProperty({ type: 'file', required: false })

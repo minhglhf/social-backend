@@ -12,6 +12,7 @@ import {
   UploadedFiles,
   Query,
   Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -102,7 +103,7 @@ export class UsersController {
   uploadFile(
     @Request() req,
     @UploadedFiles()
-    files: {
+      files: {
       avatar?: Express.Multer.File;
       coverPhoto?: Express.Multer.File;
     },
@@ -120,9 +121,28 @@ export class UsersController {
     );
   }
   @Get('search/users')
-  @ApiOperation({ description: 'Tìm kiếm người dùng' })
-  @ApiQuery({ type: String, name: 'displayName' })
-  async searchUsers(@Query('displayName') displayName: string) {
-    return this.usersService.getUserSearchList(displayName);
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Tìm kiếm người dùng theo tên' })
+  @ApiQuery({
+    type: String,
+    name: 'search',
+    description: 'Nhập chuỗi tìm kiếm, nếu chuỗi rỗng sẽ không trả về gì',
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'page',
+    description:
+      'Nhập số tự nhiên bắt đầu từ 0 tương ứng từng page, nếu nhập page <= 0 thì auto là page đầu tiên',
+  })
+  async searchUsers(
+    @Query('search') search: string,
+    @Query('page', ParseIntPipe) pageNumber,
+    @Request() req,
+  ) {
+    return this.usersService.getUserSearchList(
+      req.user.userId,
+      search,
+      pageNumber,
+    );
   }
 }

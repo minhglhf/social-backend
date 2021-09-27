@@ -15,9 +15,7 @@ export class LoginInput {
 
 export class LoginOutput {
   accessToken: string;
-  email: string;
   displayName: string;
-  birthday: Date;
   avatar: string;
-  coverPhoto: string;
+  sex: string;
 }

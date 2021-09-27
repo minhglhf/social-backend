@@ -6,11 +6,10 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
 import { FollowingsOutput } from 'src/dtos/following/following.dto';
 import { Following, FollowingDocument } from 'src/entities/following.entity';
-import { UserDocument } from 'src/entities/user.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { UsersService } from 'src/lib/users/providers/users.service';
 import { FOLLOWERS_PER_PAGE, FOLLOWINGS_PER_PAGE } from 'src/utils/constants';
 
@@ -19,6 +18,7 @@ export class FollowingsService {
   constructor(
     @InjectModel(Following.name)
     private followingModel: Model<FollowingDocument>,
+    private mapsHelper: MapsHelper,
     @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
   ) {}
   public async addFollowing(
@@ -58,7 +58,7 @@ export class FollowingsService {
         following: Types.ObjectId(followingId),
       });
       if (!followingDelete) {
-        throw new BadRequestException("You haven't followed this person yet");
+        throw new BadRequestException('You haven\'t followed this person yet');
       }
 
       await Promise.all([
@@ -86,6 +86,7 @@ export class FollowingsService {
             user: Types.ObjectId(userId),
           })
           .populate('following', ['displayName', 'avatar'])
+          .select(['-_id', '-__v'])
           .skip(skip)
           .limit(perPage),
         this.getFollowingIds(currentUserId),
@@ -98,6 +99,7 @@ export class FollowingsService {
           user: Types.ObjectId(userId),
         })
         .populate('following', ['displayName', 'avatar'])
+        .select(['-_id', '-__v'])
         .skip(skip)
         .limit(perPage);
     }
@@ -131,22 +133,18 @@ export class FollowingsService {
             following: Types.ObjectId(userId),
           })
           .populate('user', ['displayName', 'avatar'])
+          .select(['-_id', '-__v'])
           .skip(skip)
           .limit(perPage),
         this.getFollowingIds(currentUserId),
       ]);
       const followings = promises[0];
       const followingIds = promises[1];
-      return followings.map((i) => {
-        const user = i.user as unknown as any;
-        return {
-          userId: user._id.toHexString(),
-          displayName: user.displayName,
-          avatar: user.avatar,
-          followed: followingIds.includes(user._id.toString()),
-          isCurrentUser: currentUserId === user._id.toString(),
-        };
-      });
+      return this.mapsHelper.mapToFollowingsOuput(
+        followings,
+        followingIds,
+        currentUserId,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -157,14 +155,18 @@ export class FollowingsService {
   ): Promise<string[]> {
     let followings;
     if (!followerIds) {
-      followings = await this.followingModel.find({
-        user: Types.ObjectId(userId),
-      });
+      followings = await this.followingModel
+        .find({
+          user: Types.ObjectId(userId),
+        })
+        .select(['following', '-_id']);
     } else {
-      followings = await this.followingModel.find({
-        user: Types.ObjectId(userId),
-        following: { $in: followerIds },
-      });
+      followings = await this.followingModel
+        .find({
+          user: Types.ObjectId(userId),
+          following: { $in: followerIds },
+        })
+        .select(['following']);
     }
     return followings.map((i) => i.following.toString());
   }
