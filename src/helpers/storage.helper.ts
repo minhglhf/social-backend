@@ -13,7 +13,7 @@ export const imageFileFilter = (
 };
 
 export const storage = diskStorage({
-  destination: './src/uploads/images',
+  destination: './src/uploads/filestorage',
   filename: (req: any, file: Express.Multer.File, cb: any) => {
     cb(null, `${file.originalname}`);
   },
