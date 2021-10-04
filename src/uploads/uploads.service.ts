@@ -44,7 +44,9 @@ export class UploadsService {
   ): Promise<string> {
     try {
       const image = fs.readFileSync(file.path.toString());
-      fs.unlinkSync(file.path.toString());
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
       if (image) {
         const metadata = {
           contentType: file.mimetype,
@@ -65,7 +67,9 @@ export class UploadsService {
   ): Promise<string> {
     try {
       const video = fs.readFileSync(file.path.toString());
-      fs.unlinkSync(file.path.toString());
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
       if (video) {
         const metadata = {
           contentType: file.mimetype,

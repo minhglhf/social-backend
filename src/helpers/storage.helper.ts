@@ -1,4 +1,6 @@
+import { existsSync, mkdirSync } from 'fs';
 import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 export const imageFileFilter = (
   req: any,
@@ -13,8 +15,19 @@ export const imageFileFilter = (
 };
 
 export const storage = diskStorage({
-  destination: './src/uploads/filestorage',
+  destination: (req: any, file: any, cb: any) => {
+    const uploadPath = './src/uploads/filestorage/';
+
+    if (!existsSync(uploadPath)) {
+      mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
+  },
   filename: (req: any, file: Express.Multer.File, cb: any) => {
-    cb(null, `${file.originalname}`);
+    cb(null, generateFilename(file.originalname));
   },
 });
+
+function generateFilename(fileName: string) {
+  return `${Date.now()}_${fileName}`;
+}

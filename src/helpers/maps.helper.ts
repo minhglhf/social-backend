@@ -34,17 +34,17 @@ export class MapsHelper {
       .format('YYYY-MM-DD');
     let sex = '';
     switch (user.sex) {
-    case 0:
-      sex = 'Nữ';
-      break;
-    case 1:
-      sex = 'Nam';
-      break;
-    case 2:
-      sex = 'Khác';
-      break;
-    default:
+      case 0:
+        sex = 'Nữ';
         break;
+      case 1:
+        sex = 'Nam';
+        break;
+      case 2:
+        sex = 'Khác';
+        break;
+      default:
+      break;
     }
     return {
       email: user.email,
