@@ -51,7 +51,7 @@ export class UsersService {
         displayNameNoTone: this.stringHandlers.removeTone(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
-        isActive: true,
+        isActive: false,
         avatar: '',
         coverPhoto: '',
         sex: user.sex,
