@@ -34,7 +34,7 @@ export class UsersService {
     private stringHandlers: StringHandlersHelper,
     private uploadsService: UploadsService,
     private followingsService: FollowingsService,
-  ) {}
+  ) { }
   public async findUserByMail(email: string): Promise<UserDocument> {
     try {
       return await this.userModel.findOne({ email: email });
@@ -51,7 +51,7 @@ export class UsersService {
         displayNameNoTone: this.stringHandlers.removeTone(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
-        isActive: true,
+        isActive: false,
         avatar: '',
         coverPhoto: '',
         sex: user.sex,
@@ -168,25 +168,25 @@ export class UsersService {
         15,
       )}`;
       if (!avatar && coverPhoto) {
-        const promises = await Promise.all([
-          await this.uploadsService.uploadImageFile(coverPhoto, coverPhotoPath),
-          await this.userModel.findByIdAndUpdate(
-            userId,
-            { coverPhoto: coverPhotoUrl },
-            { upsert: true },
-          ),
-        ]);
-        coverPhotoUrl = promises[0];
+        coverPhotoUrl = await this.uploadsService.uploadImageFile(
+          coverPhoto,
+          coverPhotoPath,
+        );
+        await this.userModel.findByIdAndUpdate(
+          userId,
+          { coverPhoto: coverPhotoUrl },
+          { upsert: true },
+        );
       } else if (avatar && !coverPhoto) {
-        const promises = await Promise.all([
-          this.uploadsService.uploadImageFile(avatar, avatarPath),
-          this.userModel.findByIdAndUpdate(
-            userId,
-            { avatar: avatarUrl },
-            { upsert: true },
-          ),
-        ]);
-        avatarUrl = promises[0];
+        avatarUrl = await this.uploadsService.uploadImageFile(
+          avatar,
+          avatarPath,
+        );
+        await this.userModel.findByIdAndUpdate(
+          userId,
+          { avatar: avatarUrl },
+          { upsert: true },
+        );
       } else if (avatar && coverPhoto) {
         const promises = await Promise.all([
           this.uploadsService.uploadImageFile(coverPhoto, coverPhotoPath),
