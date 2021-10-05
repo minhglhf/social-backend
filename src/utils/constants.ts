@@ -7,4 +7,4 @@ export const FOLLOWERS_PER_PAGE = 15;
 export const SEARCH_USER_PER_PAGE = 10;
 
 export const PASSWORD_REGEX =
-  /^(?=.*[0-9])(?=.*[._!@#$%^&*])[a-zA-Z0-9._!@#$%^&*]{6,20}$/;
+  /^(?=.*[0-9])(?=.*[._!@#$%^&*])(?=.*[a-zA-Z])[a-zA-Z0-9._!@#$%^&*]{6,20}$/;

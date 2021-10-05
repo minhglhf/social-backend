@@ -58,9 +58,17 @@ export class UserProfile {
   createdAt: string;
 }
 export class ProfileImageInput {
-  @ApiProperty({ type: 'file', required: false })
+  @ApiProperty({
+    type: 'file',
+    required: false,
+    description: 'file ảnh đại diện, nhớ bỏ check send empty value',
+  })
   avatar: Express.Multer.File;
-  @ApiProperty({ type: 'file', required: false })
+  @ApiProperty({
+    type: 'file',
+    required: false,
+    description: 'file ảnh bìa, nhớ bỏ check send empty value',
+  })
   coverPhoto: Express.Multer.File;
 }
 export class ProfileImageOutPut {

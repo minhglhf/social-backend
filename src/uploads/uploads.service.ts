@@ -44,7 +44,9 @@ export class UploadsService {
   ): Promise<string> {
     try {
       const image = fs.readFileSync(file.path.toString());
-      fs.unlinkSync(file.path.toString());
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
       if (image) {
         const metadata = {
           contentType: file.mimetype,
@@ -53,6 +55,29 @@ export class UploadsService {
         };
         const storageRef = ref(this.storage, path);
         await uploadBytes(storageRef, image, metadata);
+        return await getDownloadURL(storageRef);
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async uploadVideoFile(
+    file: Express.Multer.File,
+    path: string,
+  ): Promise<string> {
+    try {
+      const video = fs.readFileSync(file.path.toString());
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      if (video) {
+        const metadata = {
+          contentType: file.mimetype,
+          firebaseStorageDownloadTokens: uuidv4(),
+          size: file.size,
+        };
+        const storageRef = ref(this.storage, path);
+        await uploadBytes(storageRef, video, metadata);
         return await getDownloadURL(storageRef);
       }
     } catch (error) {
