@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Post, Query } from '@nestjs/common'
+import { Controller, Get, UseGuards, Request, Post, Query, Delete } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Privacy } from 'src/utils/enums';
@@ -38,7 +38,22 @@ export class GroupsController {
         description: 'lấy danh sách groups đã join'
     })
     async getGroup(@Request() req) {
-        return this.groupsService.getGroups();
+        const yourId = req.user.userId.toString();
+        return this.groupsService.getGroups(yourId);
     }
 
+    @Delete('delete')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+        description: 'xóa group'
+    })
+    @ApiQuery({
+        type: String,
+        name: 'groupId',
+        description: 'xóa group',
+        required: true
+    })
+    async deleteGroup(@Query('groupId') groupId: string) {
+        return this.groupsService.deleteGroup(groupId)
+    }
 }
