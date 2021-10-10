@@ -20,7 +20,7 @@ export class FollowingsService {
     private followingModel: Model<FollowingDocument>,
     private mapsHelper: MapsHelper,
     @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
-  ) {}
+  ) { }
   public async addFollowing(
     userId: string,
     followingId: string,

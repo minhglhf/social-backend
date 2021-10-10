@@ -1,6 +1,7 @@
-import { Controller, Get, UseGuards, Request, Post, Query, Delete } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put } from '@nestjs/common'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { AddMemberInput } from 'src/dtos/group/addMember.dto';
 import { Privacy } from 'src/utils/enums';
 import { GroupsService } from './groups.service';
 
@@ -55,5 +56,18 @@ export class GroupsController {
     })
     async deleteGroup(@Query('groupId') groupId: string) {
         return this.groupsService.deleteGroup(groupId)
+    }
+
+    @Put('addMember')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+        description: 'thêm thành viên'
+    })
+    @ApiBody({
+        type: AddMemberInput,
+    })
+    async addMember(@Request() req, @Body() addMemberInput: AddMemberInput) {
+        const yourId = req.user.userId.toString();
+        return this.groupsService.addMember(yourId, addMemberInput)
     }
 }
