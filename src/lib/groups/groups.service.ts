@@ -1,6 +1,9 @@
-import { Injectable, Post } from '@nestjs/common'
+import { BadRequestException, Injectable, InternalServerErrorException, Post } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Type } from 'class-transformer'
+import { Model, Types } from 'mongoose'
+import { AddMemberInput } from 'src/dtos/group/addMember.dto'
+import { GroupsList } from 'src/dtos/group/getGroup.dto'
 import { Group, GroupDocument } from 'src/entities/group.entity'
 
 @Injectable()
@@ -20,16 +23,76 @@ export class GroupsService {
             return createGroup.save()
         }
         catch (err) {
-            return err
+            throw new InternalServerErrorException(err);
         }
     }
-
-    public async getGroups(): Promise<Group[]> {
+    public async getGroups(yourId: string): Promise<GroupsList> {
         try {
-            return this.groupModel.find({})
+            const promises = await Promise.all([
+                this.groupModel.find({ admin_id: yourId }),
+                this.groupModel.find({ "member.member_id": yourId })
+            ])
+            const groups = {
+                yourGroup: promises[0],
+                joinedGroup: promises[1]
+            }
+            return groups
         }
         catch (err) {
-            return err
+            throw new InternalServerErrorException(err);
+        }
+    }
+    public async updateGroup(groupId: string): Promise<Group> {
+        try {
+            return this.groupModel.findOneAndUpdate({
+                _id: groupId
+            })
+        }
+        catch (err) {
+            throw new InternalServerErrorException(err);
+        }
+    }
+    public async deleteGroup(groupId: string): Promise<void> {
+        try {
+            await this.groupModel.deleteOne({ _id: groupId })
+        }
+        catch (err) {
+            throw new InternalServerErrorException(err);
+        }
+    }
+    public async addMember(admin_id: string, addMemberInput: AddMemberInput): Promise<Group> {
+        try {
+            const group = await this.groupModel.findById(addMemberInput.groupId)
+            if (!group) {
+                throw new BadRequestException('group không tồn tại')
+            }
+            if (group.admin_id.toString() !== admin_id) {
+                throw new BadRequestException('bạn không có quyền thêm thành viên')
+            }
+            const checkMemberExist = group.member.findIndex((mem: any) => mem?.member_id.toString() === addMemberInput.userId)
+            if (checkMemberExist !== -1 || addMemberInput.userId === admin_id) {
+                throw new BadRequestException('member này đã tồn tại')
+            }
+            const gr = await this.groupModel.findOneAndUpdate(
+                {
+                    admin_id,
+                    _id: addMemberInput.groupId
+                },
+                {
+                    $push: {
+                        member: {
+                            member_id: Types.ObjectId(addMemberInput.userId),
+                        }
+                    },
+                },
+                {
+                    new: true
+                }
+            )
+            return gr
+        }
+        catch (err) {
+            throw new InternalServerErrorException(err)
         }
     }
 }

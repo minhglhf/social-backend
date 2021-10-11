@@ -14,6 +14,7 @@ export class Group {
     backgroundImage: string
     @Prop({
         type: [{
+            _id: false,
             member_id: { type: Types.ObjectId, required: true, ref: 'User' },
             member_role: { type: String, enum: GroupMemberRole, default: GroupMemberRole.NormalUser }
         }],
