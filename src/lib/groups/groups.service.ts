@@ -42,6 +42,31 @@ export class GroupsService {
             throw new InternalServerErrorException(err);
         }
     }
+    public async getGroupById(yourId: string, groupId: string): Promise<Group> {
+        try {
+            const group = await this.groupModel.findById(groupId)
+            if (!group) {
+                throw new BadRequestException('group không tồn tại')
+            }
+            if (group?.privacy === 'public') {
+                return group
+            }
+            if (group?.privacy === 'private') {
+                if (String(group.admin_id) === yourId) return group
+                else {
+                    const checkIfMember = group.member.findIndex((mem: any) => {
+                        return String(yourId) === String(mem.member_id)
+                    })
+                    if (checkIfMember !== -1) return group
+                    else throw new BadRequestException('bạn không thể  xem do không phải admin hoặc chưa tham gia group')
+                }
+            }
+            return group
+        }
+        catch (err) {
+            throw new InternalServerErrorException(err);
+        }
+    }
     public async updateGroup(groupId: string): Promise<Group> {
         try {
             return this.groupModel.findOneAndUpdate({

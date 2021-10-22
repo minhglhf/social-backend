@@ -1,5 +1,5 @@
-import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param } from '@nestjs/common'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AddMemberInput } from 'src/dtos/group/addMember.dto';
 import { Privacy } from 'src/utils/enums';
@@ -41,6 +41,22 @@ export class GroupsController {
     async getGroup(@Request() req) {
         const yourId = req.user.userId.toString();
         return this.groupsService.getGroups(yourId);
+    }
+
+    @Get('/:groupId')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+        description: 'xem chi tiết group'
+    })
+    @ApiParam({
+        type: String,
+        required: true,
+        name: 'groupId',
+        description: 'Id của group'
+    })
+    async getGroupById(@Request() req, @Param('groupId') grId: string) {
+        const yourId = req.user.userId.toString();
+        return this.groupsService.getGroupById(yourId, grId)
     }
 
     @Delete('delete')
