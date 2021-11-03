@@ -45,8 +45,8 @@ export class PostsController {
     @UploadedFiles()
     files: {
       imageOrVideo?: Express.Multer.File;
-      description: string;
     },
+    @Body() postPrivateInput: PostPrivateInput,
   ) {
     if (req.fileValidationError) {
       throw new BadRequestException(
@@ -56,7 +56,7 @@ export class PostsController {
 
     return this.postsService.createNewPostPrivate(
       req.user.userId,
-      files?.description,
+      postPrivateInput.description,
       files?.imageOrVideo ? files.imageOrVideo[0] : null,
     );
   }
@@ -77,9 +77,8 @@ export class PostsController {
     @UploadedFiles()
     files: {
       imageOrVideo?: Express.Multer.File;
-      description: string;
-      groupId: Types.ObjectId;
     },
+    @Body() postGroupInput: PostGroupInput,
   ) {
     if (req.fileValidationError) {
       throw new BadRequestException(
@@ -89,8 +88,8 @@ export class PostsController {
 
     return this.postsService.createNewPostGroup(
       req.user.userId,
-      files?.groupId,
-      files?.description,
+      postGroupInput.groupId,
+      postGroupInput.description,
       files?.imageOrVideo ? files.imageOrVideo[0] : null,
     );
   }

@@ -29,7 +29,7 @@ export class PostsService {
           filePath,
         );
         if (promise) {
-          fileUrl = promise[0];
+          fileUrl = promise;
         }
       }
       const newPost: Partial<PostDocument> = {
@@ -69,7 +69,7 @@ export class PostsService {
       }
       const newPost: Partial<PostDocument> = {
         user: Types.ObjectId(userId),
-        group: Types.ObjectId(groupId),
+        group: Types.ObjectId(groupId.toString()),
         description: description,
         imageOrVideo: fileUrl,
         hashtag: this.stringHandlersHelper.getHashtagFromString(description),

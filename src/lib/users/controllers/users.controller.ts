@@ -44,7 +44,7 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private uploadsService: UploadsService,
-  ) {}
+  ) { }
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiQuery({
@@ -82,12 +82,6 @@ export class UsersController {
   }
   @Post('upload/profile-image')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({
-    description:
-      'Cập nhật ảnh đại diện và ảnh bìa, nếu không truyền hoặc truyền null thì không cập nhật',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: ProfileImageInput })
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -100,10 +94,16 @@ export class UsersController {
       },
     ),
   )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    description:
+      'Cập nhật ảnh đại diện và ảnh bìa, nếu không truyền hoặc truyền null thì không cập nhật',
+  })
+  @ApiBody({ type: ProfileImageInput })
   uploadFile(
     @Request() req,
     @UploadedFiles()
-      files: {
+    files: {
       avatar?: Express.Multer.File;
       coverPhoto?: Express.Multer.File;
     },
@@ -113,6 +113,7 @@ export class UsersController {
         'invalid file provided, [image files allowed]',
       );
     }
+
 
     return this.usersService.updateProfileImage(
       req.user.userId,

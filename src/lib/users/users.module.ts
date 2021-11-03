@@ -14,6 +14,7 @@ import { MailModule } from 'src/mail/mai.module';
 import { UploadsModule } from 'src/uploads/uploads.module';
 import { AddressesModule } from '../addresses/addresses.module';
 import { FollowingsModule } from '../followings/followings.module';
+import { GroupsModule } from '../groups/groups.module';
 import { UsersAuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersAuthService } from './providers/auth.service';
@@ -40,9 +41,10 @@ import { UsersService } from './providers/users.service';
     AddressesModule,
     UploadsModule,
     forwardRef(() => FollowingsModule),
+    GroupsModule
   ],
   controllers: [UsersAuthController, UsersController],
   providers: [UsersService, UsersAuthService, StringHandlersHelper, MapsHelper],
   exports: [UsersService, UsersAuthService],
 })
-export class UsersModule {}
+export class UsersModule { }
