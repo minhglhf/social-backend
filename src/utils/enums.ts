@@ -17,3 +17,12 @@ export enum File {
   Image = "image",
   Video = "video"
 }
+
+export enum ReactionType {
+  Like = 'like',
+  Haha = 'haha',
+  Love = 'love',
+  Sad = 'sad',
+  Wow = 'wow',
+  Angry = 'angry'
+}
