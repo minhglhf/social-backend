@@ -168,7 +168,7 @@ export class UsersService {
         15,
       )}`;
       if (!avatar && coverPhoto) {
-        coverPhotoUrl = await this.uploadsService.uploadImageFile(
+        coverPhotoUrl = await this.uploadsService.uploadFile(
           coverPhoto,
           coverPhotoPath,
         );
@@ -178,7 +178,7 @@ export class UsersService {
           { upsert: true },
         );
       } else if (avatar && !coverPhoto) {
-        avatarUrl = await this.uploadsService.uploadImageFile(
+        avatarUrl = await this.uploadsService.uploadFile(
           avatar,
           avatarPath,
         );
@@ -189,8 +189,8 @@ export class UsersService {
         );
       } else if (avatar && coverPhoto) {
         const promises = await Promise.all([
-          this.uploadsService.uploadImageFile(coverPhoto, coverPhotoPath),
-          this.uploadsService.uploadImageFile(avatar, avatarPath),
+          this.uploadsService.uploadFile(coverPhoto, coverPhotoPath),
+          this.uploadsService.uploadFile(avatar, avatarPath),
         ]);
         coverPhotoUrl = promises[0];
         avatarUrl = promises[1];

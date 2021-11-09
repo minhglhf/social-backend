@@ -9,7 +9,7 @@ B2. `git pull origin develop`: pull code mới nhất về  <br/>
 
 B3: `git checkout -b newBranch`: tạo nhánh mới bất kì<br/>
 
-B4: `git rebase develop`: rebase nhánh develop vào nhánh yum-1
+B4: `git rebase develop`: rebase nhánh develop vào nhánh newBranch
 - Nếu xảy ra conflict:
   + B4.1: fix confict
   + B4.2: khi fix xong conflict thì git add .

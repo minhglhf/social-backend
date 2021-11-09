@@ -27,4 +27,9 @@ export class StringHandlersHelper {
     str = str.trim();
     return str;
   }
+  public getHashtagFromString(description: string): string[] {
+    let result= [];
+    result = description.match(/#[a-z0-9_]+/g) as [string];
+    return result;
+  }
 }
