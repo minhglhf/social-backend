@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
+import { CommentsModule } from './lib/comments/comments.module';
 import { PostsModule } from './lib/posts/posts.module';
 import { UsersModule } from './lib/users/users.module';
 
@@ -18,6 +19,7 @@ import { UsersModule } from './lib/users/users.module';
     }),
     UsersModule,
     PostsModule,
+    CommentsModule
   ],
   controllers: [AppController],
   providers: [AppService],

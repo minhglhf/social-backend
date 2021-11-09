@@ -13,7 +13,7 @@ export class PostsService {
     private stringHandlersHelper: StringHandlersHelper,
     private filesService: MediaFilesService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   // new post
   public async createNewPostPrivate(
@@ -22,10 +22,10 @@ export class PostsService {
     imageOrVideos: Express.Multer.File[],
   ): Promise<void> {
     try {
-      if(!userId) userId = "1234"
+      if (!userId) userId = "1234"
       const fileUrlPromises = []
       console.log(imageOrVideos[0]);
-      for(const item of imageOrVideos) {
+      for (const item of imageOrVideos) {
         const filePath = `post/imageOrVideos/${userId}${this.stringHandlersHelper.generateString(
           15,
         )}`;
@@ -53,6 +53,27 @@ export class PostsService {
       ])
     } catch (error) {
       throw new InternalServerErrorException(error);
+    }
+  }
+
+  public async getPost(postId: string): Promise<Post> {
+    try {
+      return await this.postModel.findById(postId)
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
+    }
+  }
+
+  public async updatePostCommentCount(postId: string, update): Promise<Post> {
+    try {
+      return await this.postModel.findByIdAndUpdate(
+        postId,
+        update
+      )
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
     }
   }
 
