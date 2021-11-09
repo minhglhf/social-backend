@@ -6,8 +6,8 @@ export class PostPrivateInput {
   @ApiProperty({ type: String, description: 'description nếu có' })
   @IsString()
   description: string;
-  @ApiProperty({ type: 'file', description: 'image/video nếu có' })
-  imageOrVideo: Express.Multer.File;
+  @ApiProperty({ type: ['file'], description: 'image/video nếu có' })
+  mediaFiles: [Express.Multer.File];
 }
 
 export class PostGroupInput {

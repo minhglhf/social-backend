@@ -9,16 +9,14 @@ export class Post {
   user: Types.ObjectId;
   @Prop({ type: String })
   description: string;
-  @Prop({ type: String })
-  imageOrVideo: string;
   @Prop({ type: [String] })
-  hashtag: [string];
+  mediaFiles: string[];
   @Prop({ type: [String] })
-  userLike: [string];
-  @Prop({ type: [String] })
-  userView: [string];
-  @Prop({ type: [String] })
-  comment: [string];
+  hashtags: string[];
+  @Prop({ type: Number })
+  reactions: number;
+  @Prop({ type: Number })
+  comments: Number;
 }
 export const PostSchema = SchemaFactory.createForClass(Post);
 export type PostDocument = Post & Document;

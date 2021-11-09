@@ -12,3 +12,8 @@ export enum GroupMemberRole {
   Admin = 'admin',
   NormalUser = 'normalUser'
 }
+
+export enum File {
+  Image = "image",
+  Video = "video"
+}

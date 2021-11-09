@@ -9,8 +9,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express/multer';
+import { AnyFilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express/multer';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -34,18 +35,10 @@ export class PostsController {
   @ApiOperation({ description: 'Tạo Post cá nhân mới' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: PostPrivateInput })
-  @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'imageOrVideo', maxCount: 1 }], {
-      fileFilter: imageOrVideoFileFilter,
-      storage: storage,
-    }),
-  )
+  @UseInterceptors(AnyFilesInterceptor({fileFilter: imageOrVideoFileFilter, storage: storage}))
   async createNewPostPrivate(
     @Request() req,
-    @UploadedFiles()
-    files: {
-      imageOrVideo?: Express.Multer.File;
-    },
+    @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() postPrivateInput: PostPrivateInput,
   ) {
     if (req.fileValidationError) {
@@ -53,51 +46,52 @@ export class PostsController {
         'invalid file provided, [image or video files allowed]',
       );
     }
-
+    
+    
     return this.postsService.createNewPostPrivate(
       req.user.userId,
       postPrivateInput.description,
-      files?.imageOrVideo ? files.imageOrVideo[0] : null,
+      files,
     );
   }
 
-  @Post('newpostgroup')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ description: 'Tạo Post trong nhóm ' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: PostGroupInput })
-  @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'imageOrVideo', maxCount: 1 }], {
-      fileFilter: imageOrVideoFileFilter,
-      storage: storage,
-    }),
-  )
-  async createNewPostGroup(
-    @Request() req,
-    @UploadedFiles()
-    files: {
-      imageOrVideo?: Express.Multer.File;
-    },
-    @Body() postGroupInput: PostGroupInput,
-  ) {
-    if (req.fileValidationError) {
-      throw new BadRequestException(
-        'invalid file provided, [image or video files allowed]',
-      );
-    }
+  // @Post('newpostgroup')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({ description: 'Tạo Post trong nhóm ' })
+  // @ApiConsumes('multipart/form-data')
+  // @ApiBody({ type: PostGroupInput })
+  // @UseInterceptors(
+  //   FileFieldsInterceptor([{ name: 'imageOrVideo', maxCount: 1 }], {
+  //     fileFilter: imageOrVideoFileFilter,
+  //     storage: storage,
+  //   }),
+  // )
+  // async createNewPostGroup(
+  //   @Request() req,
+  //   @UploadedFiles()
+  //   files: {
+  //     imageOrVideo?: Express.Multer.File;
+  //   },
+  //   @Body() postGroupInput: PostGroupInput,
+  // ) {
+  //   if (req.fileValidationError) {
+  //     throw new BadRequestException(
+  //       'invalid file provided, [image or video files allowed]',
+  //     );
+  //   }
 
-    return this.postsService.createNewPostGroup(
-      req.user.userId,
-      postGroupInput.groupId,
-      postGroupInput.description,
-      files?.imageOrVideo ? files.imageOrVideo[0] : null,
-    );
-  }
+  //   return this.postsService.createNewPostGroup(
+  //     req.user.userId,
+  //     postGroupInput.groupId,
+  //     postGroupInput.description,
+  //     files?.imageOrVideo ? files.imageOrVideo[0] : null,
+  //   );
+  // }
 
-  @Get('newpostgroup')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
-  async getPostNewFeed(@Request() req){
-    return this.postsService.getPostNewFeed(req.user.userId);
-  }
+  // @Get('newpostgroup')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
+  // async getPostNewFeed(@Request() req){
+  //   return this.postsService.getPostNewFeed(req.user.userId);
+  // }
 }

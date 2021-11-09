@@ -35,7 +35,7 @@ export const imageOrVideoFileFilter = (
 ) => {
   if (
     !file.originalname.match(
-      /\.(jpg|jpeg|png|gif|PNG|AVI|avi|flv|wmv|mp4|mov)$/
+      /\.(jpg|jpeg|png|gif|PNG|AVI|avi|flv|wmv|mp4|mov|webm)$/
     )
   ) {
     req.fileValidationError = 'only image or video files allowed';

@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Post, PostSchema } from 'src/entities/posts.entity';
+import { Post, PostSchema } from 'src/entities/post.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsModule } from 'src/uploads/uploads.module';
+import { HashtagsModule } from '../hashtags/hashtags.module';
+import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
 import { PostsController } from './controllers/posts.controller';
 import { PostsService } from './providers/posts.service';
 
@@ -14,7 +16,8 @@ import { PostsService } from './providers/posts.service';
         schema: PostSchema,
       },
     ]),
-    UploadsModule,
+    MediaFilesModule,
+    HashtagsModule,
   ],
   controllers: [PostsController],
   providers: [PostsService, StringHandlersHelper],
