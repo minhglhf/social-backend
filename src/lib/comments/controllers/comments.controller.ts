@@ -38,4 +38,19 @@ export class CommentsController {
     return this.commentService.addComment(userId, postId, parentId, comment);
   }
 
+  @Post('/delete/:id')
+  @ApiOperation({
+    description: 'Xoa comment'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'commentId',
+    required: true,
+    description: 'id của comment cần xoa'
+  })
+  async deleteComment(@Request() req, @Query('commentId') commentId: string) {
+    const userId = req.user.userId.toString();
+    return this.commentService.deleteComment(userId, commentId);
+  }
+
 }

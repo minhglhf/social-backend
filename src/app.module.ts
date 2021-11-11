@@ -6,6 +6,7 @@ import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
 import { CommentsModule } from './lib/comments/comments.module';
 import { PostsModule } from './lib/posts/posts.module';
+import { ReactionsModule } from './lib/reactions/reactions.module';
 import { UsersModule } from './lib/users/users.module';
 
 @Module({
@@ -19,7 +20,8 @@ import { UsersModule } from './lib/users/users.module';
     }),
     UsersModule,
     PostsModule,
-    CommentsModule
+    CommentsModule,
+    ReactionsModule
   ],
   controllers: [AppController],
   providers: [AppService],
