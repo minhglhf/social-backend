@@ -65,7 +65,7 @@ export class PostsService {
     }
   }
 
-  public async updatePostCommentCount(postId: string, update): Promise<Post> {
+  public async updatePostCommentAndReactionCount(postId: string, update): Promise<Post> {
     try {
       return await this.postModel.findByIdAndUpdate(
         postId,

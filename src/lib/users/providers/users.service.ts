@@ -35,6 +35,24 @@ export class UsersService {
     private uploadsService: UploadsService,
     private followingsService: FollowingsService,
   ) { }
+  public async findUserById(id: string): Promise<UserDocument> {
+    try {
+      return await this.userModel.findById({ id });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async findUserByManyId(listId: Types.ObjectId[]): Promise<UserDocument[]> {
+    try {
+      return await this.userModel.find({
+        '_id': {
+          $in: listId
+        }
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
   public async findUserByMail(email: string): Promise<UserDocument> {
     try {
       return await this.userModel.findOne({ email: email });

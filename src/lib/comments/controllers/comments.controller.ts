@@ -12,7 +12,7 @@ import { CommentsService } from '../providers/comments.service';
 export class CommentsController {
   constructor(private commentService: CommentsService) { }
 
-  @Post('/add')
+  @Post('/addCommentToPost')
   @ApiOperation({
     description: 'thêm comment mới'
   })
@@ -23,19 +23,89 @@ export class CommentsController {
     description: 'id của post cần comment'
   })
   @ApiQuery({
-    name: 'parentId',
+    name: 'comment',
     type: String,
-    description: 'id của comment cha',
-    required: false
+    description: 'nội dung'
+  })
+  async addComment(@Request() req, @Query('postId') postId: string, @Query('comment') comment: string) {
+    const userId = req.user.userId.toString();
+    return this.commentService.addComment(userId, postId, comment);
+  }
+
+  @Post('/addReplyToComment')
+  @ApiOperation({
+    description: 'thêm reply mới'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'commentId',
+    required: true,
+    description: 'id của  comment'
   })
   @ApiQuery({
     name: 'comment',
     type: String,
     description: 'nội dung'
   })
-  async addComment(@Request() req, @Query('postId') postId: string, @Query('parentId') parentId: string, @Query('comment') comment: string) {
+  async addReply(@Request() req, @Query('commentId') commentId: string, @Query('comment') comment: string) {
     const userId = req.user.userId.toString();
-    return this.commentService.addComment(userId, postId, parentId, comment);
+    return this.commentService.addReplyToComment(userId, commentId, comment);
   }
 
+  @Delete('/delete')
+  @ApiOperation({
+    description: 'Xoa comment'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'commentId',
+    required: true,
+    description: 'id của comment cần xoa'
+  })
+  async deleteComment(@Request() req, @Query('commentId') commentId: string) {
+    const userId = req.user.userId.toString();
+    return this.commentService.deleteComment(userId, commentId);
+  }
+
+  @Get('/getCommentsOfPost/:postId')
+  @ApiOperation({
+    description: 'Xoa comment'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'postId',
+    required: true,
+    description: 'id của post'
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'pageNumber',
+    required: false,
+    description: 'page number'
+  })
+  async getListComments(@Request() req, @Query('postId') postId: string, @Query('pageNumber') pageNumber: number) {
+    const userId = req.user.userId.toString();
+    return this.commentService.getListCommentParent(userId, postId, pageNumber);
+  }
+
+  @Get('/getCommentsReply/:commentId')
+  @ApiOperation({
+    description: 'get comment reply'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'commentId',
+    required: true,
+    description: 'id của comment'
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'pageNumber',
+    required: false,
+    description: 'page number'
+  })
+  async getListCommentReply(@Request() req, @Query('commentId') commentId: string, @Query('pageNumber') pageNumber: number) {
+    const userId = req.user.userId.toString();
+    return this.commentService.getListCommentReply(userId, commentId, pageNumber);
+  }
 }
