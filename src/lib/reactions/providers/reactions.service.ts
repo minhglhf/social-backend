@@ -51,15 +51,15 @@ export class ReactionsService {
     }
   }
 
-  public async getReactionsOfPost(userId, postId, reactType): Promise<UserReaction[]> {
+  public async getReactionsOfPost(userId, postId, reactType, pageNumber): Promise<UserReaction[]> {
     try {
       const perPage = FOLLOWINGS_PER_PAGE;
-      // 
+      const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * perPage;
       const reactions = await this.reactionModel.find({ postId: Types.ObjectId(postId) })
         .populate('userId', ['displayName', 'avatar'])
         .select(['-_id', '-__v', '-createdAt', '-updatedAt', '-postId'])
-      // .skip(skip)
-      // .limit(perPage),
+        .skip(skip)
+        .limit(perPage)
       const followedUser = await this.followingService.getFollowingIds(userId)
       const userReact: UserReaction[] = [];
       reactions.forEach((react: any) => {
@@ -74,6 +74,28 @@ export class ReactionsService {
       })
       if (reactType === ReactionTypeQuery.All) return userReact
       return userReact.filter((reaction: UserReaction) => reaction.reaction === reactType)
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
+    }
+  }
+
+  public async deleteReaction(userId, postId): Promise<void> {
+    try {
+      const post = await this.postService.getPost(postId)
+      if (!post) throw new BadRequestException('Post không tồn tại')
+      const react = await this.reactionModel.findOne({
+        userId: Types.ObjectId(userId),
+        postId: Types.ObjectId(postId)
+      })
+      if (!react) throw new BadRequestException('chưa thêm reactioon cho post này')
+      const updateCommentCount = {
+        $inc: {
+          reactions: -1,
+        },
+      }
+      await this.postService.updatePostCommentAndReactionCount(postId, updateCommentCount)
+      await this.reactionModel.findByIdAndDelete(react._id.toString())
     }
     catch (err) {
       throw new InternalServerErrorException(err)

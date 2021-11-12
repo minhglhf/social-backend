@@ -55,10 +55,34 @@ export class ReactionsController {
     required: true,
     description: 'type of react'
   })
+  @ApiQuery({
+    type: Number,
+    name: 'pageNumber',
+    required: false,
+    description: 'page number'
+  })
 
-  async getReactionsOfPost(@Request() req, @Query('postId') postId: string, @Query('reactType') reactType: string = ReactionTypeQuery.All) {
+  async getReactionsOfPost(@Request() req, @Query('postId') postId: string,
+    @Query('reactType') reactType: string = ReactionTypeQuery.All,
+    @Query('pageNumber') pageNumber: number) {
     const userId = req.user.userId.toString();
-    return this.reactionsSerivce.getReactionsOfPost(userId, postId, reactType);
+    return this.reactionsSerivce.getReactionsOfPost(userId, postId, reactType, pageNumber);
+  }
+
+  @Delete('/deleteReaction')
+  @ApiOperation({
+    description: 'xoa reaction'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'postId',
+    required: true,
+    description: 'id của post'
+  })
+
+  async deleteReactionOfPost(@Request() req, @Query('postId') postId: string) {
+    const userId = req.user.userId.toString();
+    return this.reactionsSerivce.deleteReaction(userId, postId);
   }
 
 }
