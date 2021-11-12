@@ -26,3 +26,13 @@ export enum ReactionType {
   Wow = 'wow',
   Angry = 'angry'
 }
+
+export enum ReactionTypeQuery {
+  All = 'all',
+  Like = 'like',
+  Haha = 'haha',
+  Love = 'love',
+  Sad = 'sad',
+  Wow = 'wow',
+  Angry = 'angry'
+}

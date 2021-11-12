@@ -2,7 +2,7 @@ import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Pa
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ReactionType } from 'src/utils/enums';
+import { ReactionType, ReactionTypeQuery } from 'src/utils/enums';
 import { ReactionsService } from '../providers/reactions.service';
 
 
@@ -35,6 +35,30 @@ export class ReactionsController {
   async addReaction(@Request() req, @Query('postId') postId: string, @Query('reaction') reaction: ReactionType = ReactionType.Like) {
     const userId = req.user.userId.toString();
     return this.reactionsSerivce.addReactionToPost(userId, postId, reaction);
+  }
+
+
+  @Get('/:postId')
+  @ApiOperation({
+    description: 'thêm reaction mới'
+  })
+  @ApiQuery({
+    type: String,
+    name: 'postId',
+    required: true,
+    description: 'id của post'
+  })
+  @ApiQuery({
+    type: String,
+    enum: ReactionTypeQuery,
+    name: 'reactType',
+    required: true,
+    description: 'type of react'
+  })
+
+  async getReactionsOfPost(@Request() req, @Query('postId') postId: string, @Query('reactType') reactType: string = ReactionTypeQuery.All) {
+    const userId = req.user.userId.toString();
+    return this.reactionsSerivce.getReactionsOfPost(userId, postId, reactType);
   }
 
 }
