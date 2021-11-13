@@ -1,6 +1,8 @@
 import {
   BadRequestException,
-  Injectable, InternalServerErrorException, Post,
+  Injectable,
+  InternalServerErrorException,
+  Post,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -18,49 +20,53 @@ export class ReactionsService {
     @InjectModel(Reaction.name) private reactionModel: Model<ReactionDocument>,
     private postService: PostsService,
     private usersSerivce: UsersService,
-    private followingService: FollowingsService
-  ) { }
+    private followingService: FollowingsService,
+  ) {}
   public async addReactionToPost(userId, postId, reaction): Promise<void> {
     try {
-      const checkPost = await this.postService.getPost(postId)
+      const checkPost = await this.postService.getPost(postId);
       if (!checkPost) {
-        throw new BadRequestException('Post không tồn tại')
+        throw new BadRequestException('Post không tồn tại');
       }
       const checkIfReact = await this.reactionModel.findOne({
         postId: Types.ObjectId(postId),
-        userId: Types.ObjectId(userId)
-      })
+        userId: Types.ObjectId(userId),
+      });
       if (checkIfReact) {
-        throw new BadRequestException('bạn đã thêm react cho post này')
+        throw new BadRequestException('bạn đã thêm react cho post này');
       }
-      const updateReactCount = {
-        $inc: {
-          reactions: 1,
-        }
-      }
-      await this.postService.updatePostCommentAndReactionCount(postId, updateReactCount)
+      const updateReactCount = this.getUpdate(reaction, 1);
+      await this.postService.updatePostCommentAndReactionCount(
+        postId,
+        updateReactCount,
+      );
       const addReact = new this.reactionModel({
         postId: Types.ObjectId(postId),
         userId: Types.ObjectId(userId),
-        react: reaction
-      })
-      await addReact.save()
-    }
-    catch (err) {
-      throw new InternalServerErrorException(err)
+        react: reaction,
+      });
+      await addReact.save();
+    } catch (err) {
+      throw new InternalServerErrorException(err);
     }
   }
 
-  public async getReactionsOfPost(userId, postId, reactType, pageNumber): Promise<UserReaction[]> {
+  public async getReactionsOfPost(
+    userId,
+    postId,
+    reactType,
+    pageNumber,
+  ): Promise<UserReaction[]> {
     try {
       const perPage = FOLLOWINGS_PER_PAGE;
       const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * perPage;
-      const reactions = await this.reactionModel.find({ postId: Types.ObjectId(postId) })
+      const reactions = await this.reactionModel
+        .find({ postId: Types.ObjectId(postId) })
         .populate('userId', ['displayName', 'avatar'])
         .select(['-_id', '-__v', '-createdAt', '-updatedAt', '-postId'])
         .skip(skip)
-        .limit(perPage)
-      const followedUser = await this.followingService.getFollowingIds(userId)
+        .limit(perPage);
+      const followedUser = await this.followingService.getFollowingIds(userId);
       const userReact: UserReaction[] = [];
       reactions.forEach((react: any) => {
         const user = {
@@ -68,37 +74,79 @@ export class ReactionsService {
           displayName: react.userId?.displayName,
           avatar: react.userId?.avatar,
           reaction: react.react,
-          isFollowed: followedUser.findIndex((followedId) => followedId == react.userId?._id.toString()) !== -1 ? true : false
-        }
-        userReact.push(user)
-      })
-      if (reactType === ReactionTypeQuery.All) return userReact
-      return userReact.filter((reaction: UserReaction) => reaction.reaction === reactType)
-    }
-    catch (err) {
-      throw new InternalServerErrorException(err)
+          isFollowed:
+            followedUser.findIndex(
+              (followedId) => followedId == react.userId?._id.toString(),
+            ) !== -1
+              ? true
+              : false,
+        };
+        userReact.push(user);
+      });
+      if (reactType === ReactionTypeQuery.All) return userReact;
+      return userReact.filter(
+        (reaction: UserReaction) => reaction.reaction === reactType,
+      );
+    } catch (err) {
+      throw new InternalServerErrorException(err);
     }
   }
-
   public async deleteReaction(userId, postId): Promise<void> {
     try {
-      const post = await this.postService.getPost(postId)
-      if (!post) throw new BadRequestException('Post không tồn tại')
+      const post = await this.postService.getPost(postId);
+      if (!post) throw new BadRequestException('Post không tồn tại');
       const react = await this.reactionModel.findOne({
         userId: Types.ObjectId(userId),
-        postId: Types.ObjectId(postId)
-      })
-      if (!react) throw new BadRequestException('chưa thêm reactioon cho post này')
-      const updateCommentCount = {
-        $inc: {
-          reactions: -1,
-        },
-      }
-      await this.postService.updatePostCommentAndReactionCount(postId, updateCommentCount)
-      await this.reactionModel.findByIdAndDelete(react._id.toString())
+        postId: Types.ObjectId(postId),
+      });
+      if (!react)
+        throw new BadRequestException('chưa thêm reaction cho post này');
+      const updateCommentCount = this.getUpdate(react.react, -1);
+      await this.postService.updatePostCommentAndReactionCount(
+        postId,
+        updateCommentCount,
+      );
+      await this.reactionModel.findByIdAndDelete(react._id.toString());
+    } catch (err) {
+      throw new InternalServerErrorException(err);
     }
-    catch (err) {
-      throw new InternalServerErrorException(err)
+  }
+  private getUpdate(react: string, count: number) {
+    const update = {
+      $inc: {},
+    };
+    switch (react) {
+      case ReactionType.Love:
+        update.$inc = {
+          'reactions.loves': count,
+        };
+        break;
+      case ReactionType.Like:
+        update.$inc = {
+          'reactions.likes': count,
+        };
+        break;
+      case ReactionType.Haha:
+        update.$inc = {
+          'reactions.hahas': 1,
+        };
+        break;
+      case ReactionType.Wow:
+        update.$inc = {
+          'reactions.wows': 1,
+        };
+        break;
+      case ReactionType.Sad:
+        update.$inc = {
+          'reactions.sads': 1,
+        };
+        break;
+      case ReactionType.Angry:
+        update.$inc = {
+          'reactions.angrys': 1,
+        };
+        break;
     }
+    return update;
   }
 }
