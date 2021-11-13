@@ -10,13 +10,20 @@ import {
   UploadedFiles,
   BadRequestException,
   Logger,
+  Param,
+  Query,
 } from '@nestjs/common';
-import { AnyFilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express/multer';
+import {
+  AnyFilesInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express/multer';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
@@ -35,7 +42,12 @@ export class PostsController {
   @ApiOperation({ description: 'Tạo Post cá nhân mới' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: PostPrivateInput })
-  @UseInterceptors(AnyFilesInterceptor({fileFilter: imageOrVideoFileFilter, storage: storage}))
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      fileFilter: imageOrVideoFileFilter,
+      storage: storage,
+    }),
+  )
   async createNewPostPrivate(
     @Request() req,
     @UploadedFiles() files: Array<Express.Multer.File>,
@@ -46,8 +58,7 @@ export class PostsController {
         'invalid file provided, [image or video files allowed]',
       );
     }
-    
-    
+
     return this.postsService.createNewPostPrivate(
       req.user.userId,
       postPrivateInput.description,
@@ -88,10 +99,19 @@ export class PostsController {
   //   );
   // }
 
-  // @Get('newpostgroup')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
-  // async getPostNewFeed(@Request() req){
-  //   return this.postsService.getPostNewFeed(req.user.userId);
-  // }
+  @Get('posts/in/newfeed/:postId')
+  @UseGuards(JwtAuthGuard)
+  @ApiQuery({
+    type: String,
+    name: 'pageNumber',
+    required: false,
+    description: 'Số trang 0, 1, 2... Nếu <=0 hoặc ko truyền thì lấy trang 0',
+  })
+  @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
+  async getPostNewFeed(
+    @Request() req,
+    @Query('pageNumber') pageNumber: number,
+  ) {
+    return this.postsService.getPostNewFeed(pageNumber, req.user.userId);
+  }
 }
