@@ -47,7 +47,7 @@ export class UsersAuthService {
     const salt = await bcrypt.genSalt();
     input.password = await bcrypt.hash(input.password, salt);
     await this.usersService.addNewUser(input);
-    await this.sendActivationCode(input.email);
+    //await this.sendActivationCode(input.email);
   }
   public async login(payload: JwtPayLoad): Promise<LoginOutput> {
     if (!payload.isActive) {

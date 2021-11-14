@@ -10,6 +10,21 @@ export class PostPrivateInput {
   mediaFiles: [Express.Multer.File];
 }
 
+export class PostPrivateOutput {
+  postId: string;
+  userId: string;
+  userDisplayName: string;
+  userAvatar: string;
+  files: string[];
+  description: string;
+  reactions: {
+    [reactionType: string]: number;
+  };
+  comments: number;
+  isCurrentUser: boolean;
+  createdAt: String;
+}
+
 export class PostGroupInput {
   @ApiProperty({ type: Types.ObjectId, description: 'GroupID' })
   @IsNumber()
