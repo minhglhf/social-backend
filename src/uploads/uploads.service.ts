@@ -43,7 +43,10 @@ export class UploadsService {
     path: string,
   ): Promise<string> {
     try {
+      
       const image = fs.readFileSync(file.path.toString());
+      if (!image) console.log('hello');
+
       if (fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
@@ -55,12 +58,11 @@ export class UploadsService {
         };
         const storageRef = ref(this.storage, path);
         await uploadBytes(storageRef, image, metadata);
-        
+
         return await getDownloadURL(storageRef);
       }
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
   }
- 
 }
