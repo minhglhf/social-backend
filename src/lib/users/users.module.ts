@@ -15,6 +15,7 @@ import { UploadsModule } from 'src/uploads/uploads.module';
 import { AddressesModule } from '../addresses/addresses.module';
 import { FollowingsModule } from '../followings/followings.module';
 import { GroupsModule } from '../groups/groups.module';
+import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
 import { UsersAuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersAuthService } from './providers/auth.service';
@@ -39,7 +40,7 @@ import { UsersService } from './providers/users.service';
     forwardRef(() => AuthModule),
     MailModule,
     AddressesModule,
-    UploadsModule,
+    MediaFilesModule,
     forwardRef(() => FollowingsModule),
     GroupsModule
   ],

@@ -18,13 +18,12 @@ import { AddressesService } from 'src/lib/addresses/addresses.service';
 import { Province } from 'src/entities/province.entity';
 import { Ward } from 'src/entities/ward.entity';
 import { District } from 'src/entities/district.entity';
-import { UploadsService } from 'src/uploads/uploads.service';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { SEARCH_USER_PER_PAGE } from 'src/utils/constants';
-import { Following } from 'src/entities/following.entity';
 import { FollowingsOutput } from 'src/dtos/following/following.dto';
 import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
+import { MediaFilesService } from 'src/lib/mediaFiles/mediaFiles.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -32,9 +31,9 @@ export class UsersService {
     private addressesService: AddressesService,
     private mapsHelper: MapsHelper,
     private stringHandlers: StringHandlersHelper,
-    private uploadsService: UploadsService,
+    private mediaFilesService: MediaFilesService,
     private followingsService: FollowingsService,
-  ) { }
+  ) {}
   public async findUserById(id: string): Promise<UserDocument> {
     try {
       return await this.userModel.findById({ id });
@@ -42,12 +41,14 @@ export class UsersService {
       throw new InternalServerErrorException(error);
     }
   }
-  public async findUserByManyId(listId: Types.ObjectId[]): Promise<UserDocument[]> {
+  public async findUserByManyId(
+    listId: Types.ObjectId[],
+  ): Promise<UserDocument[]> {
     try {
       return await this.userModel.find({
-        '_id': {
-          $in: listId
-        }
+        _id: {
+          $in: listId,
+        },
       });
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -186,9 +187,11 @@ export class UsersService {
         15,
       )}`;
       if (!avatar && coverPhoto) {
-        coverPhotoUrl = await this.uploadsService.uploadFile(
+        coverPhotoUrl = await this.mediaFilesService.saveFile(
           coverPhoto,
           coverPhotoPath,
+          'Ảnh bìa',
+          userId.toHexString(),
         );
         await this.userModel.findByIdAndUpdate(
           userId,
@@ -196,10 +199,13 @@ export class UsersService {
           { upsert: true },
         );
       } else if (avatar && !coverPhoto) {
-        avatarUrl = await this.uploadsService.uploadFile(
+        avatarUrl = await this.mediaFilesService.saveFile(
           avatar,
           avatarPath,
+          'Ảnh đại diện',
+          userId.toString(),
         );
+
         await this.userModel.findByIdAndUpdate(
           userId,
           { avatar: avatarUrl },
@@ -207,8 +213,18 @@ export class UsersService {
         );
       } else if (avatar && coverPhoto) {
         const promises = await Promise.all([
-          this.uploadsService.uploadFile(coverPhoto, coverPhotoPath),
-          this.uploadsService.uploadFile(avatar, avatarPath),
+          this.mediaFilesService.saveFile(
+            coverPhoto,
+            coverPhotoPath,
+            'Ảnh bìa',
+            userId.toHexString(),
+          ),
+          this.mediaFilesService.saveFile(
+            avatar,
+            avatarPath,
+            'Ảnh đại diện',
+            userId.toHexString(),
+          ),
         ]);
         coverPhotoUrl = promises[0];
         avatarUrl = promises[1];

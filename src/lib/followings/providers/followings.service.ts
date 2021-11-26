@@ -20,7 +20,7 @@ export class FollowingsService {
     private followingModel: Model<FollowingDocument>,
     private mapsHelper: MapsHelper,
     @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
-  ) { }
+  ) {}
   public async addFollowing(
     userId: string,
     followingId: string,
@@ -103,7 +103,7 @@ export class FollowingsService {
         .skip(skip)
         .limit(perPage);
     }
-    console.log(followings)
+    console.log(followings);
     return followings.map((i) => {
       const user = i.following as unknown as any;
       let followed = true;
@@ -140,9 +140,9 @@ export class FollowingsService {
         this.getFollowingIds(currentUserId),
       ]);
       const followings = promises[0];
-      console.log(followings)
+      console.log(followings);
       const followingIds = promises[1];
-      console.log(followingIds)
+      console.log(followingIds);
       return this.mapsHelper.mapToFollowingsOuput(
         followings,
         followingIds,
