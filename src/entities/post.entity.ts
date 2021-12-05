@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 @Schema({ timestamps: true })
 export class Post {
   @Prop({ type: Types.ObjectId })
-  group: Types.ObjectId;
+  group?: Types.ObjectId;
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;
   @Prop({ type: String })

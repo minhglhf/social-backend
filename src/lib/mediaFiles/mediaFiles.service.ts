@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { MediaFileDto } from 'src/dtos/mediaFile/mediaFile.dto';
 import { MediaFile, MediaFileDocument } from 'src/entities/mediaFile.entity';
+import { User } from 'src/entities/user.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsService } from 'src/uploads/uploads.service';
 import { MEDIA_FILES_PER_PAGE, VIET_NAM_TZ } from 'src/utils/constants';
@@ -62,15 +63,19 @@ export class MediaFilesService {
         break;
       case File.All:
       default:
-        (match as any).type = File.All;
+        delete match.group;
+        delete match.user
         break;
     }
     const files = await this.fileModel
       .find(match)
+      .populate('user', ['displayName'], User.name)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
     return files.map((file) => {
+      const displayName = (file.user as any).displayName;
       const createdAt = this.stringHandlersHelper.getDateWithTimezone(
         String((file as any).createdAt),
         VIET_NAM_TZ,
@@ -78,6 +83,7 @@ export class MediaFilesService {
       if (file.group) {
         return {
           userId: file.user.toString(),
+          displayName: displayName,
           des: file.des,
           url: file.url,
           type: file.type,
@@ -87,6 +93,7 @@ export class MediaFilesService {
       }
       return {
         userId: file.user.toString(),
+        displayName: displayName,
         des: file.des,
         url: file.url,
         type: file.type,

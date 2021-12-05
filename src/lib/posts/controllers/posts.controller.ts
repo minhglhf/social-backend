@@ -99,19 +99,33 @@ export class PostsController {
   //   );
   // }
 
-  @Get('posts/in/newfeed/:postId')
+  @Get('posts/in/newfeed')
   @UseGuards(JwtAuthGuard)
   @ApiQuery({
-    type: String,
+    type: Number,
     name: 'pageNumber',
     required: false,
     description: 'Số trang 0, 1, 2... Nếu <=0 hoặc ko truyền thì lấy trang 0',
   })
   @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
-  async getPostNewFeed(
+  async getPostsNewFeed(
     @Request() req,
     @Query('pageNumber') pageNumber: number,
   ) {
-    return this.postsService.getPostNewFeed(pageNumber, req.user.userId);
+    return this.postsService.getPostsNewFeed(pageNumber, req.user.userId);
   }
+  // @UseGuards(JwtAuthGuard)
+  // @ApiQuery({
+  //   type: Number,
+  //   name: 'pageNumber',
+  //   required: false,
+  //   description: 'Số trang 0, 1, 2... Nếu <=0 hoặc ko truyền thì lấy trang 0',
+  // })
+  // @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
+  // async getPostsProfile(
+  //   @Request() req,
+  //   @Query('pageNumber') pageNumber: number,
+  // ) {
+  //   return this.postsService.getPostsProfile
+  // }
 }

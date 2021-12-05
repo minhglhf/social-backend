@@ -38,6 +38,6 @@ export class StringHandlersHelper {
   public getDateWithTimezone(date: Date | string, tz: string): string {
     dayjs.extend(timezone);
     dayjs.extend(utc);
-    return dayjs(date).tz(tz).format();
+    return dayjs(date).tz(tz).format('YYYY-MM-DDTHH:mm:ss');
   }
 }

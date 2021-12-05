@@ -191,7 +191,7 @@ export class UsersService {
           coverPhoto,
           coverPhotoPath,
           'Ảnh bìa',
-          userId.toHexString(),
+          userId.toString(),
         );
         await this.userModel.findByIdAndUpdate(
           userId,
@@ -217,7 +217,7 @@ export class UsersService {
             coverPhoto,
             coverPhotoPath,
             'Ảnh bìa',
-            userId.toHexString(),
+            userId.toString(),
           ),
           this.mediaFilesService.saveFile(
             avatar,

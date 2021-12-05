@@ -1,10 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { userInfo } from 'os';
 import { PostPrivateOutput } from 'src/dtos/post/postNew.dto';
 import { Post, PostDocument } from 'src/entities/post.entity';
-import { UserDocument } from 'src/entities/user.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
@@ -25,10 +23,10 @@ export class PostsService {
     userId: string,
     description: string,
     imageOrVideos: Express.Multer.File[],
+    groupId?: string,
   ): Promise<void> {
     try {
       const fileUrlPromises = [];
-      console.log(imageOrVideos[0]);
       for (const item of imageOrVideos) {
         const filePath = `post/imageOrVideos/${userId}${this.stringHandlersHelper.generateString(
           15,
@@ -45,6 +43,7 @@ export class PostsService {
       const hashtags =
         this.stringHandlersHelper.getHashtagFromString(description);
       const newPost: Partial<PostDocument> = {
+        group: Types.ObjectId(groupId),
         user: Types.ObjectId(userId),
         description: description,
         mediaFiles: fileUrls,
@@ -59,6 +58,7 @@ export class PostsService {
         },
         comments: 0,
       };
+      if (!groupId) delete newPost.group;
       await Promise.all([
         new this.postModel(newPost).save(),
         this.hashtagsService.addHastags(hashtags),
@@ -122,8 +122,8 @@ export class PostsService {
   //     throw new InternalServerErrorException(error);
   //   }
   // }
-
-  public async getPostNewFeed(
+  // public async getPosts(pageNumber: number, currentUser: string);
+  public async getPostsNewFeed(
     pageNumber: number,
     currentUser: string,
   ): Promise<PostPrivateOutput[]> {
