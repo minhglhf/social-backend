@@ -7,17 +7,13 @@ import {
   Body,
   Post,
   UseInterceptors,
-  UploadedFile,
   BadRequestException,
   UploadedFiles,
   Query,
-  Param,
   ParseIntPipe,
+  InternalServerErrorException,
 } from '@nestjs/common';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -26,7 +22,6 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ChangePasswordInput } from 'src/dtos/user/changePassword.dto';
 import {
@@ -34,17 +29,13 @@ import {
   UserInfoInput,
 } from 'src/dtos/user/userProfile.dto';
 import { imageFileFilter, storage } from 'src/helpers/storage.helper';
-import { UploadsService } from 'src/uploads/uploads.service';
 import { UsersService } from '../providers/users.service';
 
 @ApiTags('User')
 @ApiBearerAuth()
 @Controller('user')
 export class UsersController {
-  constructor(
-    private usersService: UsersService,
-    private uploadsService: UploadsService,
-  ) { }
+  constructor(private usersService: UsersService) {}
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiQuery({
@@ -103,7 +94,7 @@ export class UsersController {
   uploadFile(
     @Request() req,
     @UploadedFiles()
-    files: {
+      files: {
       avatar?: Express.Multer.File;
       coverPhoto?: Express.Multer.File;
     },
@@ -113,7 +104,6 @@ export class UsersController {
         'invalid file provided, [image files allowed]',
       );
     }
-
 
     return this.usersService.updateProfileImage(
       req.user.userId,

@@ -1,3 +1,6 @@
+import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+import * as timezone from 'dayjs/plugin/timezone';
 export class StringHandlersHelper {
   public generateString(length: number) {
     let result = '';
@@ -31,5 +34,10 @@ export class StringHandlersHelper {
     let result = [];
     result = description.match(/#[a-z0-9_]+/g) as [string];
     return result;
+  }
+  public getDateWithTimezone(date: Date | string, tz: string): string {
+    dayjs.extend(timezone);
+    dayjs.extend(utc);
+    return dayjs(date).tz(tz).format('YYYY-MM-DDTHH:mm:ss');
   }
 }

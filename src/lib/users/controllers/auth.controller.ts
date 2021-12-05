@@ -27,11 +27,17 @@ export class UsersAuthController {
   async signUp(@Body() userSignUp: UserSignUp) {
     return this.usersAuthService.signUp(userSignUp);
   }
+  async setTimeoutPromise(timeout) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, timeout);
+    });
+  }
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @ApiOperation({ description: 'Đăng nhập' })
   @ApiBody({ type: LoginInput })
   async login(@Request() req) {
+    await this.setTimeoutPromise(1000);
     const payload = { userId: req.user._id, isActive: req.user.isActive };
     return this.usersAuthService.login(payload);
   }

@@ -5,17 +5,18 @@ export enum Mail {
 
 export enum Privacy {
   Public = 'public',
-  Private = 'private'
+  Private = 'private',
 }
 
 export enum GroupMemberRole {
   Admin = 'admin',
-  NormalUser = 'normalUser'
+  NormalUser = 'normalUser',
 }
 
 export enum File {
-  Image = "image",
-  Video = "video"
+  Image = 'image',
+  Video = 'video',
+  All = 'all',
 }
 
 export enum ReactionType {
@@ -24,7 +25,7 @@ export enum ReactionType {
   Love = 'love',
   Sad = 'sad',
   Wow = 'wow',
-  Angry = 'angry'
+  Angry = 'angry',
 }
 
 export enum ReactionTypeQuery {
@@ -34,5 +35,5 @@ export enum ReactionTypeQuery {
   Love = 'love',
   Sad = 'sad',
   Wow = 'wow',
-  Angry = 'angry'
+  Angry = 'angry',
 }

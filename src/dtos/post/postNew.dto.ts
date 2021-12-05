@@ -22,7 +22,7 @@ export class PostPrivateOutput {
   };
   comments: number;
   isCurrentUser: boolean;
-  createdAt: String;
+  createdAt: string;
 }
 
 export class PostGroupInput {
