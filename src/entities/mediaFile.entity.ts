@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class MediaFile {
-  @Prop({ type: Types.ObjectId, required: true})
+  @Prop({ type: Types.ObjectId, required: true, ref: 'User'})
   user: Types.ObjectId;
   @Prop({ type: Types.ObjectId})
   group: Types.ObjectId;
