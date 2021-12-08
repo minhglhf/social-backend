@@ -52,6 +52,7 @@ export class UserProfile {
     ward: AddressOutput;
   };
   sex: string;
+  sexNumber: number;
   followers: number;
   followings: number;
   isCurrentUser: boolean;

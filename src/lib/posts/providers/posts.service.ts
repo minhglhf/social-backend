@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PostPrivateOutput } from 'src/dtos/post/postNew.dto';
-import { Post, PostDocument } from 'src/entities/post.entity';
+import { FileType, Post, PostDocument } from 'src/entities/post.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
@@ -39,7 +39,8 @@ export class PostsService {
         );
         fileUrlPromises.push(promise);
       }
-      const fileUrls = await Promise.all(fileUrlPromises);
+   
+      const fileUrls: FileType[] = await Promise.all(fileUrlPromises);
       const hashtags =
         this.stringHandlersHelper.getHashtagFromString(description);
       const newPost: Partial<PostDocument> = {
@@ -138,6 +139,7 @@ export class PostsService {
     const posts = await this.postModel
       .find({ user: { $in: userObjectIds } })
       .populate('user', ['_id', 'displayName', 'avatar'])
+      .select(['-mediaFiles._id'])
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

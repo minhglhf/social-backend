@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { MediaFileDto } from 'src/dtos/mediaFile/mediaFile.dto';
 import { MediaFile, MediaFileDocument } from 'src/entities/mediaFile.entity';
+import { FileType } from 'src/entities/post.entity';
 import { User } from 'src/entities/user.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsService } from 'src/uploads/uploads.service';
@@ -21,7 +22,7 @@ export class MediaFilesService {
     des: string,
     userId: string,
     groupId?: string,
-  ): Promise<string> {
+  ): Promise<FileType> {
     try {
       const fileUrl = await this.uploadsService.uploadFile(uploadFile, path);
       const type = uploadFile.mimetype.split('/')[0];
@@ -35,7 +36,8 @@ export class MediaFilesService {
       };
       if (!groupId) delete newFile.groupId;
       await new this.fileModel(newFile).save();
-      return fileUrl;
+      const file = { url: fileUrl, type: type };
+      return file;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -64,7 +66,7 @@ export class MediaFilesService {
       case File.All:
       default:
         delete match.group;
-        delete match.user
+        delete match.user;
         break;
     }
     const files = await this.fileModel
@@ -76,13 +78,14 @@ export class MediaFilesService {
 
     return files.map((file) => {
       const displayName = (file.user as any).displayName;
+      const userId = (file.user as any)._id;
       const createdAt = this.stringHandlersHelper.getDateWithTimezone(
         String((file as any).createdAt),
         VIET_NAM_TZ,
       );
       if (file.group) {
         return {
-          userId: file.user.toString(),
+          userId: userId,
           displayName: displayName,
           des: file.des,
           url: file.url,
@@ -92,7 +95,7 @@ export class MediaFilesService {
         };
       }
       return {
-        userId: file.user.toString(),
+        userId: userId,
         displayName: displayName,
         des: file.des,
         url: file.url,

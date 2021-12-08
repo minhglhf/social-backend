@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString } from 'class-validator';
 import { Types } from 'mongoose';
+import { FileType } from 'src/entities/post.entity';
 
 export class PostPrivateInput {
   @ApiProperty({ type: String, description: 'description nếu có' })
@@ -10,12 +11,13 @@ export class PostPrivateInput {
   mediaFiles: [Express.Multer.File];
 }
 
+
 export class PostPrivateOutput {
   postId: string;
   userId: string;
   userDisplayName: string;
   userAvatar: string;
-  files: string[];
+  files: FileType[];
   description: string;
   reactions: {
     [reactionType: string]: number;
