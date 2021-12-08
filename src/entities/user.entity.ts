@@ -11,7 +11,7 @@ export class User {
   @Prop({ type: String, required: true })
   displayName: string;
   @Prop({ type: String, required: true })
-  displayNameNoTone: string;
+  displayNameNoAccent: string;
   @Prop({ type: Date })
   birthday: Date;
   @Prop({ type: String })
@@ -40,5 +40,5 @@ export class User {
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 export type UserDocument = Document & User;
-UserSchema.index({ displayNameNoTone: 1, isActive: 1, _id: 1 });
+UserSchema.index({ displayNameNoAccent: 1, isActive: 1, _id: 1 });
 UserSchema.index({ displayName: 1 });
