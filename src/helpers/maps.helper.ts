@@ -22,6 +22,7 @@ export class MapsHelper {
   public mapToUserProfile(
     user: UserDocument,
     isCurrentUser: boolean,
+    isFollowed?: boolean
   ): UserProfile {
     dayjs.extend(timezone);
     dayjs.extend(utc);
@@ -68,6 +69,7 @@ export class MapsHelper {
       followers: user.followers,
       followings: user.followings,
       isCurrentUser: isCurrentUser,
+      isFollowed,
       createdAt: createdAt,
     };
   }
