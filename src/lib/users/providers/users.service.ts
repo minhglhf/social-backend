@@ -33,7 +33,7 @@ export class UsersService {
     private stringHandlers: StringHandlersHelper,
     private mediaFilesService: MediaFilesService,
     private followingsService: FollowingsService,
-  ) {}
+  ) { }
   public async findUserById(id: string): Promise<UserDocument> {
     try {
       return await this.userModel.findById({ id });

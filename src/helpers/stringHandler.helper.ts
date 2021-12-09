@@ -33,6 +33,7 @@ export class StringHandlersHelper {
   public getHashtagFromString(description: string): string[] {
     let result = [];
     result = description.match(/#[a-z0-9_]+/g) as [string];
+    if (!result) return []
     return result;
   }
   public getDateWithTimezone(date: Date | string, tz: string): string {
