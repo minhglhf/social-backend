@@ -7,7 +7,11 @@ import { FileType } from 'src/entities/post.entity';
 import { User } from 'src/entities/user.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsService } from 'src/uploads/uploads.service';
-import { MEDIA_FILES_PER_PAGE, VIET_NAM_TZ } from 'src/utils/constants';
+import {
+  MEDIA_FILES_PER_PAGE,
+  VIDEOS_PERPAGE,
+  VIET_NAM_TZ,
+} from 'src/utils/constants';
 import { File } from 'src/utils/enums';
 @Injectable()
 export class MediaFilesService {
@@ -57,17 +61,17 @@ export class MediaFilesService {
       ? { user: userId, group: groupId }
       : { user: userId, group: { $exists: false } };
     switch (type) {
-      case File.Video:
-        (match as any).type = File.Video;
-        break;
-      case File.Image:
-        (match as any).type = File.Image;
-        break;
-      case File.All:
-      default:
-        delete match.group;
-        delete match.user;
-        break;
+    case File.Video:
+      (match as any).type = File.Video;
+      break;
+    case File.Image:
+      (match as any).type = File.Image;
+      break;
+    case File.All:
+    default:
+      delete match.group;
+      delete match.user;
+      break;
     }
     const files = await this.fileModel
       .find(match)
@@ -103,5 +107,39 @@ export class MediaFilesService {
         createdAt: createdAt,
       };
     });
+  }
+  public async getVideosWatch(pageNumber: number): Promise<MediaFileDto[]> {
+    try {
+      const limit = VIDEOS_PERPAGE;
+      const skip =
+        !pageNumber || pageNumber < 0 ? 0 : pageNumber * VIDEOS_PERPAGE;
+      const videos = await this.fileModel
+        .find({
+          group: { $exists: false },
+          type: File.Video,
+        })
+        .populate('user', ['displayName'])
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+      return videos.map((video) => {
+        const displayName = (video as any).displayName;
+        const userId = (video as any).user._id.toString();
+        const createdAt = this.stringHandlersHelper.getDateWithTimezone(
+          (video as any).createdAt,
+          VIET_NAM_TZ,
+        );
+        return {
+          userId: userId,
+          displayName: displayName,
+          des: video.des,
+          url: video.url,
+          type: video.type,
+          createdAt: createdAt,
+        };
+      });
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
   }
 }
