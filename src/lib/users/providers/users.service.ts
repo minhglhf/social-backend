@@ -94,7 +94,8 @@ export class UsersService {
         .populate('address.district', ['_id', 'name'], District.name)
         .populate('address.ward', ['_id', 'name'], Ward.name)
         .select(['-password', '-__v']);
-      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId);
+      const checkFollowed = await this.followingsService.checkIfFollowed(currentUserId.toString(), userId);
+      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId, checkFollowed !== null);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

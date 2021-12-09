@@ -56,6 +56,7 @@ export class UserProfile {
   followers: number;
   followings: number;
   isCurrentUser: boolean;
+  isFollowed?: boolean;
   createdAt: string;
 }
 export class ProfileImageInput {
