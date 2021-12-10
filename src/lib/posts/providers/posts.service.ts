@@ -178,7 +178,7 @@ export class PostsService {
     return result;
   }
 
-  public async searchPostByHashtag(userId: string, search: string, pageNumber: number) {
+  public async searchPosts(userId: string, search: string, pageNumber: number) {
     try {
       if (!search) return [];
       let limit = POSTS_PER_PAGE;
@@ -194,7 +194,8 @@ export class PostsService {
       }
       else {
         const posts = await this.postModel
-          .find({ description: { $regex: search } },)
+          // .find({ description: { $regex: search } },)
+          .find({ $text: { $search: search } })
           .sort([['date', 1]])
           .select(["-__v"])
           .skip(skip)

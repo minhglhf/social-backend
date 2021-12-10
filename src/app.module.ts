@@ -7,6 +7,7 @@ import { ConfigService } from './config/config.service';
 import { CommentsModule } from './lib/comments/comments.module';
 import { PostsModule } from './lib/posts/posts.module';
 import { ReactionsModule } from './lib/reactions/reactions.module';
+import { SearchModule } from './lib/search/search.module';
 import { UsersModule } from './lib/users/users.module';
 
 @Module({
@@ -20,8 +21,10 @@ import { UsersModule } from './lib/users/users.module';
     }),
     UsersModule,
     PostsModule,
+    SearchModule,
     CommentsModule,
-    ReactionsModule
+    ReactionsModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
