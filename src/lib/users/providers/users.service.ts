@@ -33,7 +33,7 @@ export class UsersService {
     private stringHandlers: StringHandlersHelper,
     private mediaFilesService: MediaFilesService,
     private followingsService: FollowingsService,
-  ) {}
+  ) { }
   public async findUserById(id: string): Promise<UserDocument> {
     try {
       return await this.userModel.findById({ id });
@@ -67,7 +67,7 @@ export class UsersService {
         email: user.email,
         password: user.password,
         displayName: user.displayName,
-        displayNameNoTone: this.stringHandlers.removeTone(user.displayName),
+        displayNameNoAccent: this.stringHandlers.removeAccent(user.displayName),
         address: { province: -1, district: -1, ward: -1 },
         birthday: new Date(user.birthday),
         isActive: false,
@@ -94,7 +94,8 @@ export class UsersService {
         .populate('address.district', ['_id', 'name'], District.name)
         .populate('address.ward', ['_id', 'name'], Ward.name)
         .select(['-password', '-__v']);
-      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId);
+      const checkFollowed = await this.followingsService.checkIfFollowed(currentUserId.toString(), userId);
+      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId, checkFollowed !== null);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -187,24 +188,28 @@ export class UsersService {
         15,
       )}`;
       if (!avatar && coverPhoto) {
-        coverPhotoUrl = await this.mediaFilesService.saveFile(
-          coverPhoto,
-          coverPhotoPath,
-          'Ảnh bìa',
-          userId.toString(),
-        );
+        coverPhotoUrl = (
+          await this.mediaFilesService.saveFile(
+            coverPhoto,
+            coverPhotoPath,
+            'Ảnh bìa',
+            userId.toString(),
+          )
+        ).url;
         await this.userModel.findByIdAndUpdate(
           userId,
           { coverPhoto: coverPhotoUrl },
           { upsert: true },
         );
       } else if (avatar && !coverPhoto) {
-        avatarUrl = await this.mediaFilesService.saveFile(
-          avatar,
-          avatarPath,
-          'Ảnh đại diện',
-          userId.toString(),
-        );
+        avatarUrl = (
+          await this.mediaFilesService.saveFile(
+            avatar,
+            avatarPath,
+            'Ảnh đại diện',
+            userId.toString(),
+          )
+        ).url;
 
         await this.userModel.findByIdAndUpdate(
           userId,
@@ -223,11 +228,11 @@ export class UsersService {
             avatar,
             avatarPath,
             'Ảnh đại diện',
-            userId.toHexString(),
+            userId.toString(),
           ),
         ]);
-        coverPhotoUrl = promises[0];
-        avatarUrl = promises[1];
+        coverPhotoUrl = promises[0].url;
+        avatarUrl = promises[1].url;
         await Promise.all([
           this.userModel.findByIdAndUpdate(
             userId,
@@ -267,10 +272,10 @@ export class UsersService {
     if (skip < followingIds.length) {
       followings = await this.userModel
         .find({
-          displayNameNoTone: { $regex: globalRegex },
+          displayNameNoAccent: { $regex: globalRegex },
           _id: { $in: followingIds },
         })
-        .sort({ displayNameNoTone: 1 })
+        .sort({ displayNameNoAccent: 1 })
         .select(['displayName', 'avatar'])
         .skip(skip)
         .limit(limit);
@@ -288,10 +293,10 @@ export class UsersService {
     }
     const rest = await this.userModel
       .find({
-        displayNameNoTone: { $regex: globalRegex },
+        displayNameNoAccent: { $regex: globalRegex },
         _id: { $nin: followingIds },
       })
-      .sort({ displayNameNoTone: 1 })
+      .sort({ displayNameNoAccent: 1 })
       .select(['displayName', 'avatar'])
       .skip(skip)
       .limit(limit);

@@ -45,7 +45,6 @@ export class UploadsService {
     try {
       
       const image = fs.readFileSync(file.path.toString());
-      if (!image) console.log('hello');
 
       if (fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);

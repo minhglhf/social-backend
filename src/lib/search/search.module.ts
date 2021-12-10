@@ -6,23 +6,21 @@ import { UploadsModule } from 'src/uploads/uploads.module';
 import { FollowingsModule } from '../followings/followings.module';
 import { HashtagsModule } from '../hashtags/hashtags.module';
 import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
-import { PostsController } from './controllers/posts.controller';
-import { PostsService } from './providers/posts.service';
+import { PostsModule } from '../posts/posts.module';
+import { UsersModule } from '../users/users.module';
+import { SearchController } from './controllers/search.controller';
+import { SearchService } from './providers/search.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      {
-        name: Post.name,
-        schema: PostSchema,
-      },
-    ]),
     MediaFilesModule,
     HashtagsModule,
     FollowingsModule,
+    PostsModule,
+    UsersModule
   ],
-  controllers: [PostsController],
-  providers: [PostsService, StringHandlersHelper],
-  exports: [PostsService],
+  controllers: [SearchController],
+  providers: [SearchService, StringHandlersHelper],
+  exports: [SearchService],
 })
-export class PostsModule { }
+export class SearchModule { }

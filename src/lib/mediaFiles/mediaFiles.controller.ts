@@ -50,4 +50,13 @@ export class MediaFilesController {
     if (!userId) userId = req.user.userId;
     return this.mediaFilesService.getFiles(fileType, userId, pageNumber);
   }
+  @Get('videos/watch')
+  @ApiQuery({ type: Number, name: 'pageNumber', required: false })
+  @ApiOperation({
+    description:
+      'Video cho phần watch, lấy theo thứ tự gần đây nhất, của cả app',
+  })
+  async getVideosWatch(@Query('pageNumber') pageNumber: number) {
+    return this.mediaFilesService.getVideosWatch(pageNumber);
+  }
 }

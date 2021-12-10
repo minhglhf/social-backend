@@ -35,7 +35,7 @@ import { UsersService } from '../providers/users.service';
 @ApiBearerAuth()
 @Controller('user')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiQuery({
@@ -94,7 +94,7 @@ export class UsersController {
   uploadFile(
     @Request() req,
     @UploadedFiles()
-      files: {
+    files: {
       avatar?: Express.Multer.File;
       coverPhoto?: Express.Multer.File;
     },

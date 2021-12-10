@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PostPrivateOutput } from 'src/dtos/post/postNew.dto';
-import { Post, PostDocument } from 'src/entities/post.entity';
+import { FileType, Post, PostDocument } from 'src/entities/post.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
@@ -16,7 +16,7 @@ export class PostsService {
     private filesService: MediaFilesService,
     private followingsService: FollowingsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   // new post
   public async createNewPostPrivate(
@@ -39,7 +39,8 @@ export class PostsService {
         );
         fileUrlPromises.push(promise);
       }
-      const fileUrls = await Promise.all(fileUrlPromises);
+
+      const fileUrls: FileType[] = await Promise.all(fileUrlPromises);
       const hashtags =
         this.stringHandlersHelper.getHashtagFromString(description);
       const newPost: Partial<PostDocument> = {
@@ -138,6 +139,7 @@ export class PostsService {
     const posts = await this.postModel
       .find({ user: { $in: userObjectIds } })
       .populate('user', ['_id', 'displayName', 'avatar'])
+      .select(['-mediaFiles._id'])
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -174,5 +176,77 @@ export class PostsService {
       };
     });
     return result;
+  }
+
+  public async searchPosts(userId: string, search: string, pageNumber: number) {
+    try {
+      if (!search) return [];
+      let limit = POSTS_PER_PAGE;
+      let skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;
+      search = search.trim()
+      const hashtagsInsearch = this.stringHandlersHelper.getHashtagFromString(search);
+      let rmwp = search.split(' ').join('');
+      hashtagsInsearch.forEach(ht => {
+        rmwp = rmwp.replace(ht, '');
+      })
+      if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
+        return this.searchPostByHashtags(hashtagsInsearch, limit, skip)
+      }
+      else {
+        const posts = await this.postModel
+          // .find({ description: { $regex: search } },)
+          .find({ $text: { $search: search } })
+          .sort([['date', 1]])
+          .select(["-__v"])
+          .skip(skip)
+          .limit(limit);
+        return {
+          searchResults: posts.length,
+          posts
+        }
+      }
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
+    }
+  }
+
+  public async searchPostByHashtags(hashtagsArr: string[], limit: number, skip: number) {
+    try {
+      if (hashtagsArr?.length === 1) {
+        const hashtagInfo = await this.hashtagsService.getHashtag(hashtagsArr[0]);
+        if (hashtagInfo) {
+          const postByHashtag = await this.postModel
+            .find({
+              hashtags: hashtagsArr[0]
+            })
+            .sort([['date', 1]])
+            .select(["-__v"])
+            .skip(skip)
+            .limit(limit);
+          return {
+            hashtagInfo,
+            postByHashtag
+          }
+        }
+      }
+      else {
+        const postByHashtags = await this.postModel
+          .find({
+            hashtags: { $all: hashtagsArr }
+          })
+          .sort([['date', 1]])
+          .select(["-__v"])
+          .skip(skip)
+          .limit(limit);
+        return {
+          searchReults: postByHashtags.length,
+          postByHashtags
+        }
+      }
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
+    }
   }
 }

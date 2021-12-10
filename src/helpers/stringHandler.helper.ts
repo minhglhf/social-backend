@@ -12,7 +12,7 @@ export class StringHandlersHelper {
     }
     return result;
   }
-  public removeTone(alias: string) {
+  public removeAccent(alias: string) {
     let str = alias;
     str = str.toLowerCase();
     str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
@@ -33,6 +33,7 @@ export class StringHandlersHelper {
   public getHashtagFromString(description: string): string[] {
     let result = [];
     result = description.match(/#[a-z0-9_]+/g) as [string];
+    if (!result) return []
     return result;
   }
   public getDateWithTimezone(date: Date | string, tz: string): string {
