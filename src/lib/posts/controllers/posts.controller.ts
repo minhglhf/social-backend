@@ -149,7 +149,7 @@ export class PostsController {
     @Query('page', ParseIntPipe) pageNumber,
     @Request() req,
   ) {
-    return this.postsService.searchPostByHashtag(
+    return this.postsService.searchPosts(
       req.user.userId,
       search,
       pageNumber,

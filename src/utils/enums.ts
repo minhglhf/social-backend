@@ -37,3 +37,9 @@ export enum ReactionTypeQuery {
   Wow = 'wow',
   Angry = 'angry',
 }
+
+export enum SearchTypes {
+  All = 'all',
+  Users = 'users',
+  Posts = 'posts',
+}
