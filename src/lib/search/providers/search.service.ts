@@ -26,8 +26,12 @@ export class SearchService {
     try {
       if (!search) return [];
       search = search.trim();
-      const searchUsers = await this.userService.getUserSearchList(userId, search, pageNumber)
-      const searchPosts = await this.postService.searchPosts(userId, search, pageNumber)
+      const promises = await Promise.all([
+        this.userService.getUserSearchList(userId, search, pageNumber),
+        this.postService.searchPosts(userId, search, pageNumber)
+      ])
+      const searchUsers = promises[0]
+      const searchPosts = promises[1]
       const usersResults = {
         searchResults: searchUsers.length,
         searchUsers
