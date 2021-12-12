@@ -15,7 +15,7 @@ export class CommentsService {
   constructor(
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
     private postService: PostsService,
-  ) {}
+  ) { }
   public async addComment(userId, postId, comment): Promise<Comment> {
     try {
       const checkPost = await this.postService.getPost(postId);
@@ -124,6 +124,7 @@ export class CommentsService {
           postId: Types.ObjectId(postId),
           parentId: null,
         })
+        .populate('userId', ['displayName', 'avatar', 'createdAt'])
         .select(['-__v', '-createdAt', '-updatedAt', '-postId'])
         .skip(skip)
         .limit(perPage);
