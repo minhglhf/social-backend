@@ -159,9 +159,21 @@ export class GroupsService {
     groupId: string,
   ): Promise<boolean> {
     try {
+      const match = {
+        $or: [
+          {
+            _id: Types.ObjectId(groupId),
+            'member.member_id': Types.ObjectId(userId),
+          },
+          {
+            _id: Types.ObjectId(groupId),
+            admin_id: Types.ObjectId(userId.toString().trim()),
+          },
+        ],
+      };
       const member = await this.groupModel.findOne({
         _id: Types.ObjectId(groupId),
-        'member.member_id': Types.ObjectId(userId),
+        admin_id: Types.ObjectId(userId.toString().trim()),
       });
       if (member) return true;
       return false;
