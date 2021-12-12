@@ -9,40 +9,34 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
-  Logger,
-  Param,
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
-import {
-  AnyFilesInterceptor,
-  FileFieldsInterceptor,
-} from '@nestjs/platform-express/multer';
+import { AnyFilesInterceptor } from '@nestjs/platform-express/multer';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { PostGroupInput, PostPrivateInput } from 'src/dtos/post/postNew.dto';
+import { PostInput } from 'src/dtos/post/postNew.dto';
 import { imageOrVideoFileFilter, storage } from 'src/helpers/storage.helper';
+import { PostLimit } from 'src/utils/enums';
 import { PostsService } from '../providers/posts.service';
 
 @ApiTags('Post')
 @ApiBearerAuth()
 @Controller('post')
+@UseGuards(JwtAuthGuard)
 export class PostsController {
   constructor(private postsService: PostsService) { }
   @Post('newpostprivate')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ description: 'Tạo Post cá nhân mới' })
+  @ApiOperation({ description: 'Tạo Post trong group lẫn cá nhân' })
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: PostPrivateInput })
+  @ApiBody({ type: PostInput })
   @UseInterceptors(
     AnyFilesInterceptor({
       fileFilter: imageOrVideoFileFilter,
@@ -52,7 +46,7 @@ export class PostsController {
   async createNewPostPrivate(
     @Request() req,
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() postPrivateInput: PostPrivateInput,
+    @Body() postPrivateInput: PostInput,
   ) {
     if (req.fileValidationError) {
       throw new BadRequestException(
@@ -60,99 +54,43 @@ export class PostsController {
       );
     }
 
-    return this.postsService.createNewPostPrivate(
+    return this.postsService.createNewPost(
       req.user.userId,
       postPrivateInput.description,
       files,
+      postPrivateInput.groupId,
     );
   }
 
-  // @Post('newpostgroup')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiOperation({ description: 'Tạo Post trong nhóm ' })
-  // @ApiConsumes('multipart/form-data')
-  // @ApiBody({ type: PostGroupInput })
-  // @UseInterceptors(
-  //   FileFieldsInterceptor([{ name: 'imageOrVideo', maxCount: 1 }], {
-  //     fileFilter: imageOrVideoFileFilter,
-  //     storage: storage,
-  //   }),
-  // )
-  // async createNewPostGroup(
-  //   @Request() req,
-  //   @UploadedFiles()
-  //   files: {
-  //     imageOrVideo?: Express.Multer.File;
-  //   },
-  //   @Body() postGroupInput: PostGroupInput,
-  // ) {
-  //   if (req.fileValidationError) {
-  //     throw new BadRequestException(
-  //       'invalid file provided, [image or video files allowed]',
-  //     );
-  //   }
-
-  //   return this.postsService.createNewPostGroup(
-  //     req.user.userId,
-  //     postGroupInput.groupId,
-  //     postGroupInput.description,
-  //     files?.imageOrVideo ? files.imageOrVideo[0] : null,
-  //   );
-  // }
-
-  @Get('posts/in/newfeed')
-  @UseGuards(JwtAuthGuard)
-  @ApiQuery({
-    type: Number,
-    name: 'pageNumber',
-    required: false,
-    description: 'Số trang 0, 1, 2... Nếu <=0 hoặc ko truyền thì lấy trang 0',
-  })
-  @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
-  async getPostsNewFeed(
-    @Request() req,
-    @Query('pageNumber') pageNumber: number,
-  ) {
-    return this.postsService.getPostsNewFeed(pageNumber, req.user.userId);
-  }
-  // @UseGuards(JwtAuthGuard)
-  // @ApiQuery({
-  //   type: Number,
-  //   name: 'pageNumber',
-  //   required: false,
-  //   description: 'Số trang 0, 1, 2... Nếu <=0 hoặc ko truyền thì lấy trang 0',
-  // })
-  // @ApiOperation({ description: 'Lấy danh sách các post cho newfeed' })
-  // async getPostsProfile(
-  //   @Request() req,
-  //   @Query('pageNumber') pageNumber: number,
-  // ) {
-  //   return this.postsService.getPostsProfile
-  // }
-
-  @Get('search/posts')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ description: 'Tìm kiếm post' })
-  @ApiQuery({
-    type: String,
-    name: 'search',
-    description: 'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
-  })
+  @Get('posts')
   @ApiQuery({
     type: Number,
     name: 'page',
-    description:
-      'Nhập số tự nhiên bắt đầu từ 0 tương ứng từng page, nếu nhập page <= 0 thì auto là page đầu tiên',
   })
-  async searchUsers(
-    @Query('search') search: string,
-    @Query('page', ParseIntPipe) pageNumber,
+  @ApiQuery({
+    type: String,
+    name: 'postLimit',
+    enum: PostLimit,
+    description: 'Chọn phạm vi post: group, profile, newsfeed',
+    required: true,
+  })
+  @ApiQuery({
+    type: String,
+    name: 'groupId',
+    description: 'Nếu chọn phạm vi là post thì thêm groupId',
+  })
+  @ApiOperation({ description: 'Lấy post trong trang cá nhân' })
+  async getPosts(
+    @Query('page', ParseIntPipe) pageNumber: number,
+    @Query('postLimit') postLimit: PostLimit,
+    @Query('groupId') groupId: string,
     @Request() req,
   ) {
-    return this.postsService.searchPosts(
-      req.user.userId,
-      search,
+    return this.postsService.getPostsWithLimit(
       pageNumber,
+      req.user.userId,
+      postLimit,
+      groupId,
     );
   }
 }

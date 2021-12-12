@@ -43,3 +43,8 @@ export enum SearchTypes {
   Users = 'users',
   Posts = 'posts',
 }
+export enum PostLimit {
+  Group = 'group',
+  Profile = 'profile',
+  NewsFeed = 'newsfeed',
+}

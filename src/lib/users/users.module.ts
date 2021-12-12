@@ -11,7 +11,6 @@ import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 
 import { MailModule } from 'src/mail/mai.module';
-import { UploadsModule } from 'src/uploads/uploads.module';
 import { AddressesModule } from '../addresses/addresses.module';
 import { FollowingsModule } from '../followings/followings.module';
 import { GroupsModule } from '../groups/groups.module';

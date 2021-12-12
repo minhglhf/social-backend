@@ -11,9 +11,8 @@ import { GroupsService } from './groups.service';
 @Controller('groups')
 @ApiTags('Groups')
 @ApiBearerAuth()
-
 export class GroupsController {
-    constructor(private groupsService: GroupsService) { }
+  constructor(private groupsService: GroupsService) {}
 
     @Post('/create')
     @UseGuards(JwtAuthGuard)
@@ -54,58 +53,57 @@ export class GroupsController {
         return this.groupsService.create(adminId, groupNewInput.groupName, groupNewInput.privacy, file);
     }
 
-    @Get('/')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({
-        description: 'lấy danh sách groups đã join'
-    })
-    async getGroup(@Request() req) {
-        const yourId = req.user.userId.toString();
-        return this.groupsService.getGroups(yourId);
-    }
+  @Get('/')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'lấy danh sách groups đã join',
+  })
+  async getGroup(@Request() req) {
+    const yourId = req.user.userId.toString();
+    return this.groupsService.getGroups(yourId);
+  }
 
-    @Get('/:groupId')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({
-        description: 'xem chi tiết group'
-    })
-    @ApiParam({
-        type: String,
-        required: true,
-        name: 'groupId',
-        description: 'Id của group'
-    })
-    async getGroupById(@Request() req, @Param('groupId') grId: string) {
-        const yourId = req.user.userId.toString();
-        return this.groupsService.getGroupById(yourId, grId)
-    }
+  @Get('/:groupId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'xem chi tiết group',
+  })
+  @ApiParam({
+    type: String,
+    required: true,
+    name: 'groupId',
+    description: 'Id của group',
+  })
+  async getGroupById(@Request() req, @Param('groupId') grId: string) {
+    const yourId = req.user.userId.toString();
+    return this.groupsService.getGroupById(yourId, grId);
+  }
 
-    @Delete('delete')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({
-        description: 'xóa group'
-    })
-    @ApiQuery({
-        type: String,
-        name: 'groupId',
-        description: 'xóa group',
-        required: true
-    })
-    async deleteGroup(@Query('groupId') groupId: string) {
-        return this.groupsService.deleteGroup(groupId)
-    }
+  @Delete('delete')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'xóa group',
+  })
+  @ApiQuery({
+    type: String,
+    name: 'groupId',
+    description: 'xóa group',
+    required: true,
+  })
+  async deleteGroup(@Query('groupId') groupId: string) {
+    return this.groupsService.deleteGroup(groupId);
+  }
 
-    @Put('addMember')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({
-        description: 'thêm thành viên'
-    })
-    @ApiConsumes('multipart/form-data')
-    @ApiBody({
-        type: AddMemberInput,
-    })
-    async addMember(@Request() req, @Body() addMemberInput: AddMemberInput) {
-        const yourId = req.user.userId.toString();
-        return this.groupsService.addMember(yourId, addMemberInput)
-    }
+  @Put('addMember')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'thêm thành viên',
+  })
+  @ApiBody({
+    type: AddMemberInput,
+  })
+  async addMember(@Request() req, @Body() addMemberInput: AddMemberInput) {
+    const yourId = req.user.userId.toString();
+    return this.groupsService.addMember(yourId, addMemberInput);
+  }
 }
