@@ -32,7 +32,7 @@ import { PostsService } from '../providers/posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(private postsService: PostsService) { }
+  constructor(private postsService: PostsService) {}
   @Post('newpostprivate')
   @ApiOperation({ description: 'Tạo Post trong group lẫn cá nhân' })
   @ApiConsumes('multipart/form-data')
@@ -66,6 +66,7 @@ export class PostsController {
   @ApiQuery({
     type: Number,
     name: 'page',
+    required: false,
   })
   @ApiQuery({
     type: String,
@@ -77,11 +78,12 @@ export class PostsController {
   @ApiQuery({
     type: String,
     name: 'groupId',
+    required: false,
     description: 'Nếu chọn phạm vi là post thì thêm groupId',
   })
   @ApiOperation({ description: 'Lấy post trong trang cá nhân' })
   async getPosts(
-    @Query('page', ParseIntPipe) pageNumber: number,
+    @Query('page') pageNumber: number,
     @Query('postLimit') postLimit: PostLimit,
     @Query('groupId') groupId: string,
     @Request() req,
