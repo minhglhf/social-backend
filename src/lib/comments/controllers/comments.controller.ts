@@ -69,7 +69,7 @@ export class CommentsController {
 
   @Get('/getCommentsOfPost/:postId')
   @ApiOperation({
-    description: 'Xoa comment'
+    description: 'get comment'
   })
   @ApiQuery({
     type: String,
