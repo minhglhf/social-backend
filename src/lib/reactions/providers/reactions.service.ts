@@ -21,8 +21,8 @@ export class ReactionsService {
     private postService: PostsService,
     private usersSerivce: UsersService,
     private followingService: FollowingsService,
-  ) {}
-  public async addReactionToPost(userId, postId, reaction): Promise<void> {
+  ) { }
+  public async addReactionToPost(userId, postId, reaction) {
     try {
       const checkPost = await this.postService.getPost(postId);
       if (!checkPost) {
@@ -32,8 +32,27 @@ export class ReactionsService {
         postId: Types.ObjectId(postId),
         userId: Types.ObjectId(userId),
       });
+      console.log(checkIfReact)
       if (checkIfReact) {
-        throw new BadRequestException('bạn đã thêm react cho post này');
+        // throw new BadRequestException('bạn đã thêm react cho post này');
+        const updateOldReactCount = this.getUpdate(checkIfReact.react, -1);
+        const updateNewReactCount = this.getUpdate(reaction, 1);
+        const updateReactCount = await Promise.all([
+          this.postService.updatePostCommentAndReactionCount(
+            postId,
+            updateOldReactCount,
+          ),
+          this.postService.updatePostCommentAndReactionCount(
+            postId,
+            updateNewReactCount,
+          ),
+          this.reactionModel.findByIdAndUpdate(checkIfReact._id, {
+            react: reaction
+          }, {
+            new: true
+          })
+        ])
+        return updateReactCount[2]
       }
       const updateReactCount = this.getUpdate(reaction, 1);
       await this.postService.updatePostCommentAndReactionCount(
@@ -45,7 +64,7 @@ export class ReactionsService {
         userId: Types.ObjectId(userId),
         react: reaction,
       });
-      await addReact.save();
+      return await addReact.save();
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
@@ -128,22 +147,22 @@ export class ReactionsService {
         break;
       case ReactionType.Haha:
         update.$inc = {
-          'reactions.hahas': 1,
+          'reactions.hahas': count,
         };
         break;
       case ReactionType.Wow:
         update.$inc = {
-          'reactions.wows': 1,
+          'reactions.wows': count,
         };
         break;
       case ReactionType.Sad:
         update.$inc = {
-          'reactions.sads': 1,
+          'reactions.sads': count,
         };
         break;
       case ReactionType.Angry:
         update.$inc = {
-          'reactions.angrys': 1,
+          'reactions.angrys': count,
         };
         break;
     }
