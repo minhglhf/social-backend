@@ -3,34 +3,16 @@ import {
   Get,
   UseGuards,
   Request,
-  Put,
-  Body,
-  Post,
-  UseInterceptors,
-  UploadedFiles,
-  BadRequestException,
-  Logger,
-  Param,
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import {
-  AnyFilesInterceptor,
-  FileFieldsInterceptor,
-} from '@nestjs/platform-express/multer';
-import {
   ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { PostGroupInput, PostPrivateInput } from 'src/dtos/post/postNew.dto';
-import { imageOrVideoFileFilter, storage } from 'src/helpers/storage.helper';
 import { SearchTypes } from 'src/utils/enums';
 import { SearchService } from '../providers/search.service';
 
@@ -38,7 +20,7 @@ import { SearchService } from '../providers/search.service';
 @ApiBearerAuth()
 @Controller('searchAll')
 export class SearchController {
-  constructor(private searchService: SearchService) { }
+  constructor(private searchService: SearchService) {}
 
   @Get('/')
   @UseGuards(JwtAuthGuard)
@@ -46,7 +28,8 @@ export class SearchController {
   @ApiQuery({
     type: String,
     name: 'search',
-    description: 'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
+    description:
+      'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
   })
   @ApiQuery({
     type: Number,
@@ -71,7 +54,7 @@ export class SearchController {
       req.user.userId,
       search,
       pageNumber,
-      searchType
-    )
+      searchType,
+    );
   }
 }
