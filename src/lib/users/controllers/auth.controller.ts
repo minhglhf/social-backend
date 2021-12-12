@@ -37,7 +37,6 @@ export class UsersAuthController {
   @ApiOperation({ description: 'Đăng nhập' })
   @ApiBody({ type: LoginInput })
   async login(@Request() req) {
-    await this.setTimeoutPromise(1000);
     const payload = { userId: req.user._id, isActive: req.user.isActive };
     return this.usersAuthService.login(payload);
   }

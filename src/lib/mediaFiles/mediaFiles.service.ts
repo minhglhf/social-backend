@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { MediaFileDto } from 'src/dtos/mediaFile/mediaFile.dto';
 import { MediaFile, MediaFileDocument } from 'src/entities/mediaFile.entity';
 import { FileType } from 'src/entities/post.entity';
-import { User } from 'src/entities/user.entity';
+import { User, UserDocument } from 'src/entities/user.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsService } from 'src/uploads/uploads.service';
 import {
@@ -61,27 +61,28 @@ export class MediaFilesService {
       ? { user: userId, group: groupId }
       : { user: userId, group: { $exists: false } };
     switch (type) {
-    case File.Video:
-      (match as any).type = File.Video;
-      break;
-    case File.Image:
-      (match as any).type = File.Image;
-      break;
-    case File.All:
-    default:
-      delete match.group;
-      delete match.user;
-      break;
+      case File.Video:
+        (match as any).type = File.Video;
+        break;
+      case File.Image:
+        (match as any).type = File.Image;
+        break;
+      case File.All:
+      default:
+        delete match.group;
+        delete match.user;
+        break;
     }
     const files = await this.fileModel
       .find(match)
-      .populate('user', ['displayName'], User.name)
+      .populate('user', ['displayName', 'avatar'], User.name)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
     return files.map((file) => {
-      const displayName = (file.user as any).displayName;
+      const avatar = (file.user as unknown as UserDocument).avatar;
+      const displayName = (file.user as unknown as UserDocument).displayName;
       const userId = (file.user as any)._id;
       const createdAt = this.stringHandlersHelper.getDateWithTimezone(
         String((file as any).createdAt),
@@ -91,6 +92,7 @@ export class MediaFilesService {
         return {
           userId: userId,
           displayName: displayName,
+          avatar: avatar,
           des: file.des,
           url: file.url,
           type: file.type,
@@ -101,6 +103,7 @@ export class MediaFilesService {
       return {
         userId: userId,
         displayName: displayName,
+        avatar: avatar,
         des: file.des,
         url: file.url,
         type: file.type,
@@ -118,12 +121,13 @@ export class MediaFilesService {
           group: { $exists: false },
           type: File.Video,
         })
-        .populate('user', ['displayName'])
+        .populate('user', ['displayName', 'avatar'])
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(skip);
       return videos.map((video) => {
-        const displayName = (video as any).displayName;
+        const displayName = (video.user as unknown as UserDocument).displayName;
+        const avatar = (video.user as unknown as UserDocument).avatar;
         const userId = (video as any).user._id.toString();
         const createdAt = this.stringHandlersHelper.getDateWithTimezone(
           (video as any).createdAt,
@@ -132,6 +136,7 @@ export class MediaFilesService {
         return {
           userId: userId,
           displayName: displayName,
+          avatar: avatar,
           des: video.des,
           url: video.url,
           type: video.type,
