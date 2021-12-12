@@ -1,7 +1,10 @@
-import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common'
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AddMemberInput } from 'src/dtos/group/addMember.dto';
+import { NewGroupInput } from 'src/dtos/group/createGroup.dto';
+import { imageFileFilter, storage } from 'src/helpers/storage.helper';
 import { Privacy } from 'src/utils/enums';
 import { GroupsService } from './groups.service';
 
@@ -17,20 +20,38 @@ export class GroupsController {
     @ApiOperation({
         description: 'tạo group mới'
     })
-    @ApiQuery({
-        type: String,
-        name: 'name',
-        required: true,
-        description: 'Đặt Tên Group'
+    @ApiConsumes('multipart/form-data')
+    // @ApiBody({ type: NewGroupInput })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                groupName: { type: 'string' },
+                privacy: { type: 'string', enum: [Privacy.Public, Privacy.Private] },
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
     })
-    @ApiQuery({
-        name: 'privacy',
-        enum: Privacy,
-        description: 'Chọn quyền riêng tư của groups'
-    })
-    async createGroup(@Request() req, @Query('name') name: String, @Query('privacy') privacy: Privacy = Privacy.Public) {
+    @UseInterceptors(FileInterceptor('file', {
+        fileFilter: imageFileFilter,
+        storage: storage
+    }))
+
+    async createGroup(
+        @Request() req,
+        @Body() groupNewInput: NewGroupInput,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        if (req.fileValidationError) {
+            throw new BadRequestException(
+                'invalid file provided, [image files allowed]',
+            );
+        }
         const adminId = req.user.userId.toString();
-        return this.groupsService.create(adminId, name, privacy);
+        return this.groupsService.create(adminId, groupNewInput.groupName, groupNewInput.privacy, file);
     }
 
     @Get('/')
@@ -79,6 +100,7 @@ export class GroupsController {
     @ApiOperation({
         description: 'thêm thành viên'
     })
+    @ApiConsumes('multipart/form-data')
     @ApiBody({
         type: AddMemberInput,
     })
