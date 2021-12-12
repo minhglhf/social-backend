@@ -12,11 +12,13 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { PASSWORD_REGEX } from 'src/utils/constants';
+import { EMAIL_REGEX, PASSWORD_REGEX } from 'src/utils/constants';
 
 export class UserSignUp {
   @ApiProperty({ type: String, required: true, description: 'User email' })
-  @IsEmail()
+  @Matches(EMAIL_REGEX, {
+    message: 'Invalid email',
+  })
   email: string;
   @ApiProperty({ type: String, required: true, description: 'User password' })
   @Matches(PASSWORD_REGEX, {

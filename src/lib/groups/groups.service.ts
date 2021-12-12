@@ -5,18 +5,40 @@ import { Model, Types } from 'mongoose'
 import { AddMemberInput } from 'src/dtos/group/addMember.dto'
 import { GroupsList } from 'src/dtos/group/getGroup.dto'
 import { Group, GroupDocument } from 'src/entities/group.entity'
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper'
+import { MediaFilesService } from '../mediaFiles/mediaFiles.service'
 
 @Injectable()
 
 export class GroupsService {
     constructor(
-        @InjectModel(Group.name) private groupModel: Model<GroupDocument>
+        @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
+        private filesService: MediaFilesService,
+        private stringHandlersHelper: StringHandlersHelper,
     ) { }
 
-    public async create(adminId: String, groupName: String, groupPrivacy: String): Promise<Group> {
+    public async create(userId: string, groupName: string, groupPrivacy: string, file: Express.Multer.File): Promise<Group> {
         try {
+            const group = await this.groupModel.findOne({
+                admin_id: userId,
+                name: groupName
+            })
+            console.log(group);
+            if (group) {
+                throw new BadRequestException('trùng tên group đã tạo');
+            }
+            const filePath = `group/groupBackgroundImage/${userId}/${groupName}/${this.stringHandlersHelper.generateString(
+                15,
+            )}`;
+            const uploadFile = await this.filesService.saveFile(
+                file,
+                filePath,
+                groupName,
+                userId,
+            );
             const createGroup = new this.groupModel({
-                admin_id: adminId,
+                admin_id: userId,
+                backgroundImage: uploadFile.url,
                 name: groupName,
                 privacy: groupPrivacy
             })

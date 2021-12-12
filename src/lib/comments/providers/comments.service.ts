@@ -124,8 +124,8 @@ export class CommentsService {
           postId: Types.ObjectId(postId),
           parentId: null,
         })
-        .populate('userId', ['displayName', 'avatar', 'createdAt'])
-        .select(['-__v', '-createdAt', '-updatedAt', '-postId'])
+        .populate('userId', ['displayName', 'avatar'])
+        .select(['-__v', '-postId'])
         .skip(skip)
         .limit(perPage);
       return commentParent;
