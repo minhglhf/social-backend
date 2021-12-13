@@ -79,7 +79,8 @@ export class PostsController {
     type: String,
     name: 'groupId',
     required: false,
-    description: 'Nếu chọn phạm vi là post thì thêm groupId',
+    description:
+      'Nếu chọn phạm vi là post thì thêm groupId, nếu không có groupId thì sẽ lấy tất cả post trong các group đã tham gia',
   })
   @ApiQuery({
     type: String,
