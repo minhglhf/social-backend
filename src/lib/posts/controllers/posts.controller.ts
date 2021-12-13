@@ -32,7 +32,7 @@ import { PostsService } from '../providers/posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(private postsService: PostsService) {}
+  constructor(private postsService: PostsService) { }
   @Post('newpostprivate')
   @ApiOperation({ description: 'Tạo Post trong group lẫn cá nhân' })
   @ApiConsumes('multipart/form-data')
@@ -59,6 +59,32 @@ export class PostsController {
       postPrivateInput.description,
       files,
       postPrivateInput.groupId,
+    );
+  }
+
+  @Get('search/posts')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Tìm kiếm post' })
+  @ApiQuery({
+    type: String,
+    name: 'search',
+    description: 'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'page',
+    description:
+      'Nhập số tự nhiên bắt đầu từ 0 tương ứng từng page, nếu nhập page <= 0 thì auto là page đầu tiên',
+  })
+  async searchUsers(
+    @Query('search') search: string,
+    @Query('page', ParseIntPipe) pageNumber,
+    @Request() req,
+  ) {
+    return this.postsService.searchPosts(
+      req.user.userId,
+      search,
+      pageNumber,
     );
   }
 

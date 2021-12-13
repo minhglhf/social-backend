@@ -10,7 +10,9 @@ import { Model, Types } from 'mongoose';
 import { AddMemberInput } from 'src/dtos/group/addMember.dto';
 import { GroupsList } from 'src/dtos/group/getGroup.dto';
 import { Group, GroupDocument } from 'src/entities/group.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
+import { POSTS_PER_PAGE } from 'src/utils/constants';
 import { Privacy } from 'src/utils/enums';
 import { MediaFilesService } from '../mediaFiles/mediaFiles.service';
 
@@ -20,7 +22,8 @@ export class GroupsService {
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private filesService: MediaFilesService,
     private stringHandlersHelper: StringHandlersHelper,
-  ) {}
+    // private mapsHelper: MapsHelper,
+  ) { }
 
   public async create(
     userId: string,
@@ -84,13 +87,12 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
-  public async getGroupById(yourId: string, groupId: string): Promise<Group> {
+  public async getGroupById(yourId: string, groupId: string): Promise<any> {
     try {
       const group: any = await this.groupModel
         .findById(groupId)
         .populate('admin_id', ['displayName', 'avatar'])
         .populate('member.member_id', ['displayName', 'avatar']);
-      console.log(group);
       if (!group) {
         throw new BadRequestException('group không tồn tại');
       }
@@ -98,16 +100,22 @@ export class GroupsService {
         return group;
       }
       if (group?.privacy === 'public') {
-        return group;
+        const isJoined = await this.IsMemberOfGroup(yourId, groupId)
+        return {
+          isJoined,
+          group
+        }
       }
       if (group?.privacy === 'private') {
         if (String(group.admin_id) === String(yourId)) return group;
         else {
-          const checkIfMember = group.member.findIndex((mem: any) => {
-            return String(yourId) === String(mem.member_id._id);
-          });
-          console.log(checkIfMember);
-          if (checkIfMember !== -1) return group;
+          const isJoined = await this.IsMemberOfGroup(yourId, groupId)
+          if (isJoined) {
+            return {
+              isJoined,
+              group
+            };
+          }
           else
             throw new BadRequestException(
               'bạn không thể  xem do không phải admin hoặc chưa tham gia group',
@@ -216,6 +224,46 @@ export class GroupsService {
       ]);
 
       return promises[1];
+    } catch (err) {
+      throw new InternalServerErrorException(err);
+    }
+  }
+  public async searchGroups(userId: string, search: string, pageNumber: number) {
+    try {
+      if (!search) return [];
+      const limit = POSTS_PER_PAGE;
+      const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;
+      search = search.trim();
+      const groups = await this.groupModel
+        // .find({ description: { $regex: search } },)
+        .find({
+          name: { $regex: search },
+          privacy: Privacy.Public
+        })
+        .populate('admin_id', ['displayName', 'avatar'])
+        .sort([['date', 1]])
+        .select(['-__v', '-member'])
+        .skip(skip)
+        .limit(limit);
+      const mapGroups = await Promise.all(groups.map(async (g: any) => {
+        const isJoined = await this.IsMemberOfGroup(userId, g._id.toString())
+        return {
+          _id: g._id,
+          admin_id: g.admin_id._id,
+          adminDisplayName: g.admin_id.displayName,
+          adminAvatar: g.admin_id.avatar,
+          bgimg: g.backgroundImage,
+          name: g.name,
+          privacy: g.privacy,
+          members: g.totalMember,
+          isJoined
+        }
+      }))
+      return {
+        searchResults: mapGroups.length,
+        groups: mapGroups,
+      };
+      // }
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
