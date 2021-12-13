@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
 import { userInfo } from 'os';
 import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
@@ -125,8 +126,10 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     try {
-      if (!(await this.groupsService.IsMemberOfGroup(currentUser, groupId)))
-        throw new BadRequestException('You have not joined the group');
+      if (groupId) {
+        if (!(await this.groupsService.IsMemberOfGroup(currentUser, groupId)))
+          throw new BadRequestException('You have not joined the group');
+      }
       return await this.getPosts(
         pageNumber,
         currentUser,
@@ -175,6 +178,11 @@ export class PostsService {
     switch (option) {
       case PostLimit.Group:
         match = { group: Types.ObjectId(groupId) };
+        if (!groupId)
+          match = {
+            user: Types.ObjectId(currentUser),
+            group: { $exists: true },
+          };
         break;
       case PostLimit.Profile:
         match = {
@@ -360,7 +368,7 @@ export class PostsService {
 
         { $limit: TRENDING_LENGTH },
       ]);
-   
+
       const result = posts.map((post) => {
         const postId = (post as any)._id;
         const createdAt = this.stringHandlersHelper.getDateWithTimezone(

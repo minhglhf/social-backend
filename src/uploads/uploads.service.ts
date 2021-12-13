@@ -17,17 +17,6 @@ import * as fs from 'fs';
 export class UploadsService {
   private storage: FirebaseStorage;
   constructor(configService: ConfigService) {
-    // const adminConfig: ServiceAccount = {
-    //   : configService.get('FIREBASE_PROJECT_ID'),
-    //   privateKey: configService
-    //     .get('FIREBASE_PRIVATE_KEY')
-    //     .replace(/\\n/g, '\n'),
-    //   clientEmail: configService.get('FIREBASE_CLIENT_EMAIL'),
-    // };
-    // admin.initializeApp({
-    //   credential: admin.credential.cert(adminConfig),
-    //   storageBucket: configService.get('STORAGE_BUCKET_URL'),
-    // });
     const firebaseConfig: FirebaseOptions = {
       projectId: configService.get('FIREBASE_PROJECT_ID'),
       authDomain: configService.get('AUTH_DOMAIN'),
@@ -36,7 +25,6 @@ export class UploadsService {
     const firebaseApp = initializeApp(firebaseConfig);
     this.storage = getStorage(firebaseApp);
 
-    //this.bucket = admin.storage().bucket();
   }
   public async uploadFile(
     file: Express.Multer.File,
