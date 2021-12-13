@@ -10,7 +10,7 @@ export class FileType {
 
 @Schema({ timestamps: true })
 export class Post {
-  @Prop({ type: Types.ObjectId })
+  @Prop({ type: Types.ObjectId, ref: 'Group' })
   group?: Types.ObjectId;
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId;

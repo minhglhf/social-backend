@@ -11,7 +11,6 @@ import {
   UploadedFiles,
   Query,
   ParseIntPipe,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
