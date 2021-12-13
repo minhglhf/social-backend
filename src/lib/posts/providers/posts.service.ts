@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { userInfo } from 'os';
 import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
 import { GroupDocument } from 'src/entities/group.entity';
 import { FileType, Post, PostDocument } from 'src/entities/post.entity';
@@ -13,7 +14,11 @@ import { FollowingsService } from 'src/lib/followings/providers/followings.servi
 import { GroupsService } from 'src/lib/groups/groups.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
 import { MediaFilesService } from 'src/lib/mediaFiles/mediaFiles.service';
-import { POSTS_PER_PAGE, VIET_NAM_TZ } from 'src/utils/constants';
+import {
+  POSTS_PER_PAGE,
+  TRENDING_LENGTH,
+  VIET_NAM_TZ,
+} from 'src/utils/constants';
 import { PostLimit } from 'src/utils/enums';
 @Injectable()
 export class PostsService {
@@ -94,13 +99,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-      case PostLimit.Group:
-        return this.getPostsGroup(pageNumber, currentUser, groupId);
-      case PostLimit.Profile:
-        return this.getPostsProfile(pageNumber, currentUser);
-      case PostLimit.NewsFeed:
-      default:
-        return this.getPostsNewFeed(pageNumber, currentUser);
+    case PostLimit.Group:
+      return this.getPostsGroup(pageNumber, currentUser, groupId);
+    case PostLimit.Profile:
+      return this.getPostsProfile(pageNumber, currentUser);
+    case PostLimit.NewsFeed:
+    default:
+      return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -168,23 +173,23 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-    case PostLimit.Group:
-      match = { group: Types.ObjectId(groupId) };
-      break;
-    case PostLimit.Profile:
-      match = {
-          user: Types.ObjectId(currentUser),
-          group: { $exists: false },
-        };
+      case PostLimit.Group:
+        match = { group: Types.ObjectId(groupId) };
         break;
-      case PostLimit.NewsFeed:
-      default:
+      case PostLimit.Profile:
         match = {
-          $or: [
-            { user: { $in: userObjectIds }, group: { $exists: false } },
-            { user: Types.ObjectId(currentUser), group: { $exists: true } },
-          ],
-        };
+        user: Types.ObjectId(currentUser),
+        group: { $exists: false },
+      };
+      break;
+    case PostLimit.NewsFeed:
+    default:
+      match = {
+        $or: [
+          { user: { $in: userObjectIds }, group: { $exists: false } },
+          { user: Types.ObjectId(currentUser), group: { $exists: true } },
+        ],
+      };
     }
     const posts = await this.postModel
       .find(match)
@@ -310,5 +315,76 @@ export class PostsService {
     );
     result.total = total;
     return result;
+  }
+  public async getTrending(currentUser: string): Promise<PostOutput[]> {
+    try {
+      const posts: PostDocument[] = await this.postModel.aggregate([
+        {
+          $addFields: {
+            total: {
+              $sum: [
+                '$reactions.loves',
+                '$reactions.likes',
+                '$reactions.hahas',
+                '$reactions.wows',
+                '$reactions.sads',
+                '$reactions.angrys',
+              ],
+            },
+          },
+        },
+        {
+          $sort: {
+            total: -1,
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            let: { user: 'user' },
+            pipeline: [{ $project: { _id: 1, displayName: 1, avatar: 1 } }],
+            as: 'user',
+          },
+        },
+        { $match: { group: { $exists: false } } },
+        {
+          $project: {
+            user: { $arrayElemAt: ['$user', 0] },
+            description: 1,
+            mediaFiles: 1,
+            reactions: 1,
+            comments: 1,
+            createdAt: 1,
+          },
+        },
+
+        { $limit: TRENDING_LENGTH },
+      ]);
+   
+      const result = posts.map((post) => {
+        const postId = (post as any)._id;
+        const createdAt = this.stringHandlersHelper.getDateWithTimezone(
+          String((post as any).createdAt),
+          VIET_NAM_TZ,
+        );
+        const user = post.user as any;
+        const reactions = this.getReactions(post.reactions);
+        return {
+          postId: postId,
+          userId: user._id,
+          userDisplayName: user.displayName,
+          userAvatar: user.avatar,
+          description: post.description,
+          files: post.mediaFiles,
+          reactions: reactions,
+          comments: post.comments,
+          isCurrentUser: user._id.toString() === currentUser,
+          createdAt: createdAt,
+        };
+      });
+      return result;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 }

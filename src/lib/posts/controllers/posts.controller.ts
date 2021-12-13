@@ -106,4 +106,11 @@ export class PostsController {
       groupId,
     );
   }
+  @Get('trending')
+  @ApiOperation({
+    description: 'các post có nhiều react nhất, mặc định lấy 20 post',
+  })
+  async getTrending(@Request() req) {
+    return this.postsService.getTrending(req.user.userId);
+  }
 }
