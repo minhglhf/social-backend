@@ -81,16 +81,27 @@ export class PostsController {
     required: false,
     description: 'Nếu chọn phạm vi là post thì thêm groupId',
   })
+  @ApiQuery({
+    type: String,
+    name: 'userId',
+    required: false,
+    description:
+      'id của user muốn lấy post, nếu trong trang cá nhân của mình thì không cần truyền cũng đc',
+  })
   @ApiOperation({ description: 'Lấy post trong trang cá nhân' })
   async getPosts(
     @Query('page') pageNumber: number,
     @Query('postLimit') postLimit: PostLimit,
     @Query('groupId') groupId: string,
+    @Query('userId') userId: string,
     @Request() req,
   ) {
+    if (userId) {
+      if (postLimit !== PostLimit.Profile) return;
+    } else userId = req.user.userId;
     return this.postsService.getPostsWithLimit(
       pageNumber,
-      req.user.userId,
+      userId,
       postLimit,
       groupId,
     );
