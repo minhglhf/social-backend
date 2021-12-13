@@ -11,6 +11,7 @@ import { AddMemberInput } from 'src/dtos/group/addMember.dto';
 import { GroupsList } from 'src/dtos/group/getGroup.dto';
 import { Group, GroupDocument } from 'src/entities/group.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
+import { Privacy } from 'src/utils/enums';
 import { MediaFilesService } from '../mediaFiles/mediaFiles.service';
 
 @Injectable()
@@ -118,6 +119,33 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
+
+  public async joinGroupPublic(
+    yourId: string,
+    groupId: string,
+  ): Promise<Group> {
+    try {
+      const group: any = await this.groupModel.findById(groupId);
+      if (!group) {
+        throw new BadRequestException('group không tồn tại');
+      }
+      if (group.privacy === Privacy.Private) {
+        throw new BadRequestException(
+          'Liên hệ với admin của group để được thêm vào',
+        );
+      }
+      return await this.addMember(
+        group.admin_id,
+        {
+          groupId: group._id,
+          userId: yourId,
+        },
+        true,
+      );
+    } catch (err) {
+      throw new InternalServerErrorException(err);
+    }
+  }
   public async updateGroup(groupId: string): Promise<Group> {
     try {
       return this.groupModel.findOneAndUpdate({
@@ -127,6 +155,7 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
+
   public async deleteGroup(groupId: string): Promise<void> {
     try {
       await this.groupModel.deleteOne({ _id: groupId });
@@ -137,13 +166,14 @@ export class GroupsService {
   public async addMember(
     admin_id: string,
     addMemberInput: AddMemberInput,
+    requestJoin = false,
   ): Promise<Group> {
     try {
       const group = await this.groupModel.findById(addMemberInput.groupId);
       if (!group) {
         throw new BadRequestException('group không tồn tại');
       }
-      if (group.admin_id.toString() !== admin_id) {
+      if (group.admin_id.toString() !== admin_id && !requestJoin) {
         throw new BadRequestException('bạn không có quyền thêm thành viên');
       }
       const checkMemberExist = group.member.findIndex(
