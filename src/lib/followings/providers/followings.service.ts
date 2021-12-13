@@ -20,16 +20,15 @@ export class FollowingsService {
     private followingModel: Model<FollowingDocument>,
     private mapsHelper: MapsHelper,
     @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
-  ) { }
+  ) {}
   public async checkIfFollowed(userId, followingId) {
     try {
       return this.followingModel.findOne({
         user: Types.ObjectId(userId),
         following: Types.ObjectId(followingId),
-      })
-    }
-    catch (err) {
-      throw new InternalServerErrorException(err)
+      });
+    } catch (err) {
+      throw new InternalServerErrorException(err);
     }
   }
   public async addFollowing(

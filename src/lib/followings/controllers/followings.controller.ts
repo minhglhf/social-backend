@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { FollowingInput } from 'src/dtos/following/following.dto';
+import { UsersAddressService } from 'src/lib/users/providers/usersAddress.service';
 import { FollowingsService } from '../providers/followings.service';
 
 @Controller('following')
@@ -26,7 +27,10 @@ import { FollowingsService } from '../providers/followings.service';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class FollowingsController {
-  constructor(private followingsService: FollowingsService) {}
+  constructor(
+    private followingsService: FollowingsService,
+    private usersAddressService: UsersAddressService,
+  ) {}
   @Post('add/followings')
   @ApiBody({ type: FollowingInput })
   @ApiOperation({ description: 'Theo dõi người dùng khác' })
@@ -102,5 +106,9 @@ export class FollowingsController {
       pageNumber,
       req.user.userId,
     );
+  }
+  @Get('follows/suggestion')
+  async getFollowsSuggestion(@Request() req) {
+    return this.usersAddressService.getNearestUsers(req.user.userId);
   }
 }

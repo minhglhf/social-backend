@@ -48,3 +48,9 @@ export enum PostLimit {
   Profile = 'profile',
   NewsFeed = 'newsfeed',
 }
+
+export enum LocationType {
+  Province = 'province',
+  District = 'district',
+  Ward = 'ward',
+}
