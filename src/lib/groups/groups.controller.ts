@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common'
+import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param, UploadedFile, UseInterceptors, BadRequestException, ParseIntPipe } from '@nestjs/common'
 import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -121,5 +121,31 @@ export class GroupsController {
   async joinGroupPub(@Request() req, @Query('groupId') groupId: string) {
     const yourId = req.user.userId.toString();
     return this.groupsService.joinGroupPublic(yourId, groupId);
+  }
+
+  @Get('search/groups')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Tìm kiếm grpup' })
+  @ApiQuery({
+    type: String,
+    name: 'search',
+    description: 'Nhập chuỗi tìm kiếm, chỉ tìm được group public',
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'page',
+    description:
+      'Nhập số tự nhiên bắt đầu từ 0 tương ứng từng page, nếu nhập page <= 0 thì auto là page đầu tiên',
+  })
+  async searchUsers(
+    @Query('search') search: string,
+    @Query('page', ParseIntPipe) pageNumber,
+    @Request() req,
+  ) {
+    return this.groupsService.searchGroups(
+      req.user.userId,
+      search,
+      pageNumber,
+    );
   }
 }
