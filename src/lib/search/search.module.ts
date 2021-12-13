@@ -4,6 +4,7 @@ import { Post, PostSchema } from 'src/entities/post.entity';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsModule } from 'src/uploads/uploads.module';
 import { FollowingsModule } from '../followings/followings.module';
+import { GroupsModule } from '../groups/groups.module';
 import { HashtagsModule } from '../hashtags/hashtags.module';
 import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
 import { PostsModule } from '../posts/posts.module';
@@ -17,7 +18,8 @@ import { SearchService } from './providers/search.service';
     HashtagsModule,
     FollowingsModule,
     PostsModule,
-    UsersModule
+    UsersModule,
+    GroupsModule
   ],
   controllers: [SearchController],
   providers: [SearchService, StringHandlersHelper],
