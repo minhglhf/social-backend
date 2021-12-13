@@ -12,46 +12,46 @@ import { GroupsService } from './groups.service';
 @ApiTags('Groups')
 @ApiBearerAuth()
 export class GroupsController {
-  constructor(private groupsService: GroupsService) {}
+  constructor(private groupsService: GroupsService) { }
 
-    @Post('/create')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({
-        description: 'tạo group mới'
-    })
-    @ApiConsumes('multipart/form-data')
-    // @ApiBody({ type: NewGroupInput })
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                groupName: { type: 'string' },
-                privacy: { type: 'string', enum: [Privacy.Public, Privacy.Private] },
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                },
-            },
+  @Post('/create')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'tạo group mới'
+  })
+  @ApiConsumes('multipart/form-data')
+  // @ApiBody({ type: NewGroupInput })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        groupName: { type: 'string' },
+        privacy: { type: 'string', enum: [Privacy.Public, Privacy.Private] },
+        file: {
+          type: 'string',
+          format: 'binary',
         },
-    })
-    @UseInterceptors(FileInterceptor('file', {
-        fileFilter: imageFileFilter,
-        storage: storage
-    }))
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    fileFilter: imageFileFilter,
+    storage: storage
+  }))
 
-    async createGroup(
-        @Request() req,
-        @Body() groupNewInput: NewGroupInput,
-        @UploadedFile() file: Express.Multer.File
-    ) {
-        if (req.fileValidationError) {
-            throw new BadRequestException(
-                'invalid file provided, [image files allowed]',
-            );
-        }
-        const adminId = req.user.userId.toString();
-        return this.groupsService.create(adminId, groupNewInput.groupName, groupNewInput.privacy, file);
+  async createGroup(
+    @Request() req,
+    @Body() groupNewInput: NewGroupInput,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    if (req.fileValidationError) {
+      throw new BadRequestException(
+        'invalid file provided, [image files allowed]',
+      );
     }
+    const adminId = req.user.userId.toString();
+    return this.groupsService.create(adminId, groupNewInput.groupName, groupNewInput.privacy, file);
+  }
 
   @Get('/')
   @UseGuards(JwtAuthGuard)
@@ -105,5 +105,21 @@ export class GroupsController {
   async addMember(@Request() req, @Body() addMemberInput: AddMemberInput) {
     const yourId = req.user.userId.toString();
     return this.groupsService.addMember(yourId, addMemberInput);
+  }
+
+  @Post('joinGroup')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    description: 'thêm thành viên',
+  })
+  @ApiQuery({
+    type: String,
+    name: 'groupId',
+    description: 'groupId',
+    required: true,
+  })
+  async joinGroupPub(@Request() req, @Query('groupId') groupId: string) {
+    const yourId = req.user.userId.toString();
+    return this.groupsService.joinGroupPublic(yourId, groupId);
   }
 }
