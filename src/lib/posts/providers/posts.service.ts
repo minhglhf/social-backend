@@ -10,6 +10,7 @@ import { userInfo } from 'os';
 import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
 import { GroupDocument } from 'src/entities/group.entity';
 import { FileType, Post, PostDocument } from 'src/entities/post.entity';
+import { UserDocument } from 'src/entities/user.entity';
 import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
@@ -17,6 +18,7 @@ import { GroupsService } from 'src/lib/groups/groups.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
 import { MediaFilesService } from 'src/lib/mediaFiles/mediaFiles.service';
 import {
+  GROUPS_SUGGESSTION_LENGTH,
   POSTS_PER_PAGE,
   TRENDING_LENGTH,
   VIET_NAM_TZ,
@@ -102,13 +104,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-      case PostLimit.Group:
-        return this.getPostsGroup(pageNumber, currentUser, groupId);
-      case PostLimit.Profile:
-        return this.getPostsProfile(pageNumber, currentUser);
-      case PostLimit.NewsFeed:
-      default:
-        return this.getPostsNewFeed(pageNumber, currentUser);
+    case PostLimit.Group:
+      return this.getPostsGroup(pageNumber, currentUser, groupId);
+    case PostLimit.Profile:
+      return this.getPostsProfile(pageNumber, currentUser);
+    case PostLimit.NewsFeed:
+    default:
+      return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -178,28 +180,28 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-      case PostLimit.Group:
-        match = { group: Types.ObjectId(groupId) };
-        if (!groupId)
-          match = {
-            user: Types.ObjectId(currentUser),
-            group: { $exists: true },
-          };
-        break;
-      case PostLimit.Profile:
+    case PostLimit.Group:
+      match = { group: Types.ObjectId(groupId) };
+      if (!groupId)
         match = {
           user: Types.ObjectId(currentUser),
-          group: { $exists: false },
+          group: { $exists: true },
         };
-        break;
-      case PostLimit.NewsFeed:
-      default:
-        match = {
-          $or: [
-            { user: { $in: userObjectIds }, group: { $exists: false } },
-            { user: Types.ObjectId(currentUser), group: { $exists: true } },
-          ],
-        };
+      break;
+    case PostLimit.Profile:
+      match = {
+        user: Types.ObjectId(currentUser),
+        group: { $exists: false },
+      };
+      break;
+    case PostLimit.NewsFeed:
+    default:
+      match = {
+        $or: [
+          { user: { $in: userObjectIds }, group: { $exists: false } },
+          { user: Types.ObjectId(currentUser), group: { $exists: true } },
+        ],
+      };
     }
     const posts = await this.postModel
       .find(match)
@@ -235,14 +237,18 @@ export class PostsService {
         const posts = await this.postModel
           .find({ description: { $regex: search } })
           // .find({ $text: { $search: search } })
+          .populate('user', ['avatar', 'displayName'])
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
-        console.log(posts);
+
+        const postsResult = posts.map((post) =>
+          this.mapsHelper.mapToPostOutPut(post, userId),
+        );
         return {
           searchResults: posts.length,
-          posts,
+          postsResult,
         };
       }
     } catch (err) {
@@ -291,18 +297,6 @@ export class PostsService {
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
-  }
-  private getReactions(reactions: Reactions): Reactions {
-    const reactionsArr = Object.entries<number>(reactions).sort((el1, el2) => {
-      return Number(el2[1]) - Number(el1[1]);
-    });
-    let total = 0;
-    for (const key in reactions) total += reactions[key];
-    const result: Reactions = Object.fromEntries<number>(
-      reactionsArr.slice(0, 3).filter((i) => Number(i[1]) > 0),
-    );
-    result.total = total;
-    return result;
   }
   public async getTrending(currentUser: string): Promise<PostOutput[]> {
     try {
@@ -362,8 +356,40 @@ export class PostsService {
     currentUser: string,
   ): Promise<PostOutput> {
     try {
+      const groups = await this.getMostPostsGroupIds(currentUser);
+      console.log(groups);
+
       const post = await this.postModel.findById(postId);
       return this.mapsHelper.mapToPostOutPut(post, currentUser);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async getMostPostsGroupIds(userId: string): Promise<any[]> {
+    try {
+      const time = this.stringHandlersHelper.getStartAndEndDate(VIET_NAM_TZ);
+      const start = new Date(time[0]);
+      const end = new Date(time[1]);
+      const groupIds = await this.postModel.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: start, $lte: end },
+            user: Types.ObjectId(userId),
+            group: { $exists: true },
+          },
+        },
+        { $group: { _id: { group: '$group' }, totalPosts: { $sum: 1 } } },
+        { $sort: { totalPosts: -1 } },
+        {
+          $project: {
+            groupId: '$_id.group',
+            totalPosts: 1,
+            _id: 0,
+          },
+        },
+        { $limit: GROUPS_SUGGESSTION_LENGTH },
+      ]);
+      return groupIds;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

@@ -1,6 +1,33 @@
-import { Controller, Get, UseGuards, Request, Post, Query, Delete, Body, Put, Param, UploadedFile, UseInterceptors, BadRequestException, ParseIntPipe } from '@nestjs/common'
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Request,
+  Post,
+  Query,
+  Delete,
+  Body,
+  Put,
+  Param,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
+  ParseIntPipe,
+} from '@nestjs/common';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AddMemberInput } from 'src/dtos/group/addMember.dto';
 import { NewGroupInput } from 'src/dtos/group/createGroup.dto';
@@ -12,12 +39,12 @@ import { GroupsService } from './groups.service';
 @ApiTags('Groups')
 @ApiBearerAuth()
 export class GroupsController {
-  constructor(private groupsService: GroupsService) { }
+  constructor(private groupsService: GroupsService) {}
 
   @Post('/create')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    description: 'tạo group mới'
+    description: 'tạo group mới',
   })
   @ApiConsumes('multipart/form-data')
   // @ApiBody({ type: NewGroupInput })
@@ -34,15 +61,16 @@ export class GroupsController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', {
-    fileFilter: imageFileFilter,
-    storage: storage
-  }))
-
+  @UseInterceptors(
+    FileInterceptor('file', {
+      fileFilter: imageFileFilter,
+      storage: storage,
+    }),
+  )
   async createGroup(
     @Request() req,
     @Body() groupNewInput: NewGroupInput,
-    @UploadedFile() file: Express.Multer.File
+    @UploadedFile() file: Express.Multer.File,
   ) {
     if (req.fileValidationError) {
       throw new BadRequestException(
@@ -50,7 +78,12 @@ export class GroupsController {
       );
     }
     const adminId = req.user.userId.toString();
-    return this.groupsService.create(adminId, groupNewInput.groupName, groupNewInput.privacy, file);
+    return this.groupsService.create(
+      adminId,
+      groupNewInput.groupName,
+      groupNewInput.privacy,
+      file,
+    );
   }
 
   @Get('/')
@@ -142,14 +175,12 @@ export class GroupsController {
     @Query('page', ParseIntPipe) pageNumber,
     @Request() req,
   ) {
-    return this.groupsService.searchGroups(
-      req.user.userId,
-      search,
-      pageNumber,
-    );
+    return this.groupsService.searchGroups(req.user.userId, search, pageNumber);
   }
-  @Get('/suggestedGroups')
+  @UseGuards(JwtAuthGuard)
+  @Get('/suggest/Groups')
   async getFollowsSuggestion(@Request() req) {
+
     return this.groupsService.getSuggestedGroup(req.user.userId);
   }
 }

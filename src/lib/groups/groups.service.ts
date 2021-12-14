@@ -12,7 +12,7 @@ import { GroupsList } from 'src/dtos/group/getGroup.dto';
 import { Group, GroupDocument } from 'src/entities/group.entity';
 import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
-import { POSTS_PER_PAGE } from 'src/utils/constants';
+import { GROUPS_SUGGESSTION_LENGTH, POSTS_PER_PAGE } from 'src/utils/constants';
 import { Privacy } from 'src/utils/enums';
 import { MediaFilesService } from '../mediaFiles/mediaFiles.service';
 import { PostsService } from '../posts/providers/posts.service';
@@ -22,10 +22,8 @@ export class GroupsService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private filesService: MediaFilesService,
-    private stringHandlersHelper: StringHandlersHelper,
-    // private postsService: PostsService
-    // private mapsHelper: MapsHelper,
-  ) { }
+    private stringHandlersHelper: StringHandlersHelper, // private postsService: PostsService // private mapsHelper: MapsHelper,
+  ) {}
 
   public async create(
     userId: string,
@@ -102,23 +100,22 @@ export class GroupsService {
         return group;
       }
       if (group?.privacy === 'public') {
-        const isJoined = await this.IsMemberOfGroup(yourId, groupId)
+        const isJoined = await this.IsMemberOfGroup(yourId, groupId);
         return {
           isJoined,
-          group
-        }
+          group,
+        };
       }
       if (group?.privacy === 'private') {
         if (String(group.admin_id) === String(yourId)) return group;
         else {
-          const isJoined = await this.IsMemberOfGroup(yourId, groupId)
+          const isJoined = await this.IsMemberOfGroup(yourId, groupId);
           if (isJoined) {
             return {
               isJoined,
-              group
+              group,
             };
-          }
-          else
+          } else
             throw new BadRequestException(
               'bạn không thể  xem do không phải admin hoặc chưa tham gia group',
             );
@@ -230,7 +227,11 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
-  public async searchGroups(userId: string, search: string, pageNumber: number) {
+  public async searchGroups(
+    userId: string,
+    search: string,
+    pageNumber: number,
+  ) {
     try {
       if (!search) return [];
       const limit = POSTS_PER_PAGE;
@@ -240,27 +241,29 @@ export class GroupsService {
         // .find({ description: { $regex: search } },)
         .find({
           name: { $regex: search },
-          privacy: Privacy.Public
+          privacy: Privacy.Public,
         })
         .populate('admin_id', ['displayName', 'avatar'])
         .sort([['date', 1]])
         .select(['-__v', '-member'])
         .skip(skip)
         .limit(limit);
-      const mapGroups = await Promise.all(groups.map(async (g: any) => {
-        const isJoined = await this.IsMemberOfGroup(userId, g._id.toString())
-        return {
-          _id: g._id,
-          admin_id: g.admin_id._id,
-          adminDisplayName: g.admin_id.displayName,
-          adminAvatar: g.admin_id.avatar,
-          bgimg: g.backgroundImage,
-          name: g.name,
-          privacy: g.privacy,
-          members: g.totalMember,
-          isJoined
-        }
-      }))
+      const mapGroups = await Promise.all(
+        groups.map(async (g: any) => {
+          const isJoined = await this.IsMemberOfGroup(userId, g._id.toString());
+          return {
+            _id: g._id,
+            admin_id: g.admin_id._id,
+            adminDisplayName: g.admin_id.displayName,
+            adminAvatar: g.admin_id.avatar,
+            bgimg: g.backgroundImage,
+            name: g.name,
+            privacy: g.privacy,
+            members: g.totalMember,
+            isJoined,
+          };
+        }),
+      );
       return {
         searchResults: mapGroups.length,
         groups: mapGroups,
@@ -270,9 +273,19 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
-  public async getSuggestedGroup(userId: string) {
+  public async getSuggestedGroup(
+    userId: string,
+  ): Promise<Partial<GroupDocument>[]> {
     try {
-
+      const match = {
+        admin_id: { $ne: Types.ObjectId(userId) },
+        'member.member_id': { $ne: Types.ObjectId(userId) },
+        privacy: Privacy.Public,
+      };
+      return await this.groupModel
+        .find(match)
+        .select(['name', 'backgroundImage', 'totalMember'])
+        .limit(GROUPS_SUGGESSTION_LENGTH);
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
