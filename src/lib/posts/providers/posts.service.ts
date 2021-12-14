@@ -30,7 +30,7 @@ export class PostsService {
     private followingsService: FollowingsService,
     private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   public async createNewPost(
     userId: string,
@@ -100,13 +100,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-    case PostLimit.Group:
-      return this.getPostsGroup(pageNumber, currentUser, groupId);
-    case PostLimit.Profile:
-      return this.getPostsProfile(pageNumber, currentUser);
-    case PostLimit.NewsFeed:
-    default:
-      return this.getPostsNewFeed(pageNumber, currentUser);
+      case PostLimit.Group:
+        return this.getPostsGroup(pageNumber, currentUser, groupId);
+      case PostLimit.Profile:
+        return this.getPostsProfile(pageNumber, currentUser);
+      case PostLimit.NewsFeed:
+      default:
+        return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -186,18 +186,18 @@ export class PostsService {
         break;
       case PostLimit.Profile:
         match = {
-        user: Types.ObjectId(currentUser),
-        group: { $exists: false },
-      };
-      break;
-    case PostLimit.NewsFeed:
-    default:
-      match = {
-        $or: [
-          { user: { $in: userObjectIds }, group: { $exists: false } },
-          { user: Types.ObjectId(currentUser), group: { $exists: true } },
-        ],
-      };
+          user: Types.ObjectId(currentUser),
+          group: { $exists: false },
+        };
+        break;
+      case PostLimit.NewsFeed:
+      default:
+        match = {
+          $or: [
+            { user: { $in: userObjectIds }, group: { $exists: false } },
+            { user: Types.ObjectId(currentUser), group: { $exists: true } },
+          ],
+        };
     }
     const posts = await this.postModel
       .find(match)
@@ -244,6 +244,7 @@ export class PostsService {
       const limit = POSTS_PER_PAGE;
       const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;
       search = search.trim();
+      // console.log(search)
       const hashtagsInsearch =
         this.stringHandlersHelper.getHashtagFromString(search);
       let rmwp = search.split(' ').join('');
@@ -253,13 +254,15 @@ export class PostsService {
       if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
         return this.searchPostByHashtags(hashtagsInsearch, limit, skip);
       } else {
+        console.log(search)
         const posts = await this.postModel
-          // .find({ description: { $regex: search } },)
-          .find({ $text: { $search: search } })
+          .find({ description: { $regex: search } },)
+          // .find({ $text: { $search: search } })
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
+        console.log(posts)
         return {
           searchResults: posts.length,
           posts,
