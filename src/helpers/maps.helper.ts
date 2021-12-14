@@ -10,7 +10,15 @@ import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
 import { VIET_NAM_TZ } from 'src/utils/constants';
 import { LoginOutput } from 'src/dtos/user/login.dto';
+import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
+import { StringHandlersHelper } from './stringHandler.helper';
+import { PostDocument } from 'src/entities/post.entity';
+import { GroupDocument } from 'src/entities/group.entity';
 export class MapsHelper {
+  stringhandlersHelper: StringHandlersHelper;
+  constructor() {
+    this.stringhandlersHelper = new StringHandlersHelper();
+  }
   public mapToLoginOutput(accessToken: string, user: UserProfile): LoginOutput {
     return {
       accessToken: accessToken,
@@ -22,7 +30,7 @@ export class MapsHelper {
   public mapToUserProfile(
     user: UserDocument,
     isCurrentUser: boolean,
-    isFollowed?: boolean
+    isFollowed?: boolean,
   ): UserProfile {
     dayjs.extend(timezone);
     dayjs.extend(utc);
@@ -88,5 +96,47 @@ export class MapsHelper {
         isCurrentUser: currentUserId === user._id.toString(),
       };
     });
+  }
+  private getReactions(reactions: Reactions): Reactions {
+    const reactionsArr = Object.entries<number>(reactions).sort((el1, el2) => {
+      return Number(el2[1]) - Number(el1[1]);
+    });
+    let total = 0;
+    for (const key in reactions) total += reactions[key];
+    const result: Reactions = Object.fromEntries<number>(
+      reactionsArr.slice(0, 3).filter((i) => Number(i[1]) > 0),
+    );
+    result.total = total;
+    return result;
+  }
+  public mapToPostOutPut(post: PostDocument, currentUser: string): PostOutput {
+    const postId = (post as any)._id;
+    const user = post.user as any;
+    const reactions = this.getReactions(post.reactions);
+
+    const createdAt = this.stringhandlersHelper.getDateWithTimezone(
+      String((post as any).createdAt),
+      VIET_NAM_TZ,
+    );
+
+    const groupId = (post.group as any)?._id;
+    const groupName = (post.group as unknown as GroupDocument)?.name;
+    const groupBackgroundImage = (post.group as unknown as GroupDocument)
+      ?.backgroundImage;
+    return {
+      postId: postId,
+      groupId: groupId?.toString(),
+      groupBackgroundImage: groupBackgroundImage,
+      groupName: groupName,
+      userId: user._id,
+      userDisplayName: user.displayName,
+      userAvatar: user.avatar,
+      description: post.description,
+      files: post.mediaFiles,
+      reactions: reactions,
+      comments: post.comments,
+      isCurrentUser: user._id.toString() === currentUser,
+      createdAt: createdAt,
+    };
   }
 }

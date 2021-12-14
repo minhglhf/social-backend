@@ -11,6 +11,7 @@ import {
   BadRequestException,
   Query,
   ParseIntPipe,
+  Param,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express/multer';
 import {
@@ -18,6 +19,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -32,7 +34,7 @@ import { PostsService } from '../providers/posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(private postsService: PostsService) { }
+  constructor(private postsService: PostsService) {}
   @Post('newpostprivate')
   @ApiOperation({ description: 'Tạo Post trong group lẫn cá nhân' })
   @ApiConsumes('multipart/form-data')
@@ -68,7 +70,8 @@ export class PostsController {
   @ApiQuery({
     type: String,
     name: 'search',
-    description: 'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
+    description:
+      'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
   })
   @ApiQuery({
     type: Number,
@@ -81,11 +84,7 @@ export class PostsController {
     @Query('page', ParseIntPipe) pageNumber,
     @Request() req,
   ) {
-    return this.postsService.searchPosts(
-      req.user.userId,
-      search,
-      pageNumber,
-    );
+    return this.postsService.searchPosts(req.user.userId, search, pageNumber);
   }
 
   @Get('posts')
@@ -139,5 +138,18 @@ export class PostsController {
   })
   async getTrending(@Request() req) {
     return this.postsService.getTrending(req.user.userId);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('post/:postId')
+  @ApiParam({
+    type: String,
+    name: 'postId',
+    description: 'Id của post muốn lấy thông tin',
+  })
+  @ApiOperation({ description: 'Lấy thông tin của post theo id' })
+  async getPostById(@Param('postId') postId: string, @Request() req) {
+    console.log(req.user.userId);
+
+    return this.postsService.getPostById(postId, req.user.userId);
   }
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from 'src/entities/post.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsModule } from '../followings/followings.module';
 import { GroupsModule } from '../groups/groups.module';
@@ -23,7 +24,7 @@ import { PostsService } from './providers/posts.service';
     FollowingsModule,
   ],
   controllers: [PostsController],
-  providers: [PostsService, StringHandlersHelper],
+  providers: [PostsService, StringHandlersHelper, MapsHelper],
   exports: [PostsService],
 })
 export class PostsModule { }
