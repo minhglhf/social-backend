@@ -15,6 +15,7 @@ import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { POSTS_PER_PAGE } from 'src/utils/constants';
 import { Privacy } from 'src/utils/enums';
 import { MediaFilesService } from '../mediaFiles/mediaFiles.service';
+import { PostsService } from '../posts/providers/posts.service';
 
 @Injectable()
 export class GroupsService {
@@ -22,6 +23,7 @@ export class GroupsService {
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private filesService: MediaFilesService,
     private stringHandlersHelper: StringHandlersHelper,
+    // private postsService: PostsService
     // private mapsHelper: MapsHelper,
   ) { }
 
@@ -264,6 +266,13 @@ export class GroupsService {
         groups: mapGroups,
       };
       // }
+    } catch (err) {
+      throw new InternalServerErrorException(err);
+    }
+  }
+  public async getSuggestedGroup(userId: string) {
+    try {
+
     } catch (err) {
       throw new InternalServerErrorException(err);
     }

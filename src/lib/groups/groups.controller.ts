@@ -148,4 +148,8 @@ export class GroupsController {
       pageNumber,
     );
   }
+  @Get('/suggestedGroups')
+  async getFollowsSuggestion(@Request() req) {
+    return this.groupsService.getSuggestedGroup(req.user.userId);
+  }
 }
