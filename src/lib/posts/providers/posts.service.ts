@@ -10,6 +10,7 @@ import { userInfo } from 'os';
 import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
 import { GroupDocument } from 'src/entities/group.entity';
 import { FileType, Post, PostDocument } from 'src/entities/post.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { GroupsService } from 'src/lib/groups/groups.service';
@@ -26,11 +27,12 @@ export class PostsService {
   constructor(
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private stringHandlersHelper: StringHandlersHelper,
+    private mapsHelper: MapsHelper,
     private filesService: MediaFilesService,
     private followingsService: FollowingsService,
     private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) { }
+  ) {}
 
   public async createNewPost(
     userId: string,
@@ -207,34 +209,9 @@ export class PostsService {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    const result = posts.map((post) => {
-      const postId = (post as any)._id;
-      const createdAt = this.stringHandlersHelper.getDateWithTimezone(
-        String((post as any).createdAt),
-        VIET_NAM_TZ,
-      );
-      const user = post.user as any;
-      const reactions = this.getReactions(post.reactions);
-      const groupId = (post.group as any)?._id;
-      const groupName = (post.group as unknown as GroupDocument)?.name;
-      const groupBackgroundImage = (post.group as unknown as GroupDocument)
-        ?.backgroundImage;
-      return {
-        postId: postId,
-        groupId: groupId?.toString(),
-        groupBackgroundImage: groupBackgroundImage,
-        groupName: groupName,
-        userId: user._id,
-        userDisplayName: user.displayName,
-        userAvatar: user.avatar,
-        description: post.description,
-        files: post.mediaFiles,
-        reactions: reactions,
-        comments: post.comments,
-        isCurrentUser: user._id.toString() === currentUser,
-        createdAt: createdAt,
-      };
-    });
+    const result = posts.map((post) =>
+      this.mapsHelper.mapToPostOutPut(post, currentUser),
+    );
     return result;
   }
 
@@ -254,15 +231,15 @@ export class PostsService {
       if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
         return this.searchPostByHashtags(hashtagsInsearch, limit, skip);
       } else {
-        console.log(search)
+        console.log(search);
         const posts = await this.postModel
-          .find({ description: { $regex: search } },)
+          .find({ description: { $regex: search } })
           // .find({ $text: { $search: search } })
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
-        console.log(posts)
+        console.log(posts);
         return {
           searchResults: posts.length,
           posts,
@@ -372,28 +349,21 @@ export class PostsService {
         { $limit: TRENDING_LENGTH },
       ]);
 
-      const result = posts.map((post) => {
-        const postId = (post as any)._id;
-        const createdAt = this.stringHandlersHelper.getDateWithTimezone(
-          String((post as any).createdAt),
-          VIET_NAM_TZ,
-        );
-        const user = post.user as any;
-        const reactions = this.getReactions(post.reactions);
-        return {
-          postId: postId,
-          userId: user._id,
-          userDisplayName: user.displayName,
-          userAvatar: user.avatar,
-          description: post.description,
-          files: post.mediaFiles,
-          reactions: reactions,
-          comments: post.comments,
-          isCurrentUser: user._id.toString() === currentUser,
-          createdAt: createdAt,
-        };
-      });
+      const result = posts.map((post) =>
+        this.mapsHelper.mapToPostOutPut(post, currentUser),
+      );
       return result;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async getPostById(
+    postId: string,
+    currentUser: string,
+  ): Promise<PostOutput> {
+    try {
+      const post = await this.postModel.findById(postId);
+      return this.mapsHelper.mapToPostOutPut(post, currentUser);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
