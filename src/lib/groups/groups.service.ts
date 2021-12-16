@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Post,
@@ -23,7 +25,8 @@ export class GroupsService {
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     private filesService: MediaFilesService,
     private stringHandlersHelper: StringHandlersHelper, // private postsService: PostsService // private mapsHelper: MapsHelper,
-  ) {}
+    @Inject(forwardRef(() => PostsService)) private postsService: PostsService
+  ) { }
 
   public async create(
     userId: string,
@@ -165,7 +168,10 @@ export class GroupsService {
 
   public async deleteGroup(groupId: string): Promise<void> {
     try {
-      await this.groupModel.deleteOne({ _id: groupId });
+      await Promise.all([
+        this.groupModel.deleteOne({ _id: groupId }),
+        this.postsService.deleteManyPostsOfGroup(groupId)
+      ])
     } catch (err) {
       throw new InternalServerErrorException(err);
     }

@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -32,9 +34,9 @@ export class PostsService {
     private mapsHelper: MapsHelper,
     private filesService: MediaFilesService,
     private followingsService: FollowingsService,
-    private groupsService: GroupsService,
+    @Inject(forwardRef(() => GroupsService)) private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   public async createNewPost(
     userId: string,
@@ -104,13 +106,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-    case PostLimit.Group:
-      return this.getPostsGroup(pageNumber, currentUser, groupId);
-    case PostLimit.Profile:
-      return this.getPostsProfile(pageNumber, currentUser);
-    case PostLimit.NewsFeed:
-    default:
-      return this.getPostsNewFeed(pageNumber, currentUser);
+      case PostLimit.Group:
+        return this.getPostsGroup(pageNumber, currentUser, groupId);
+      case PostLimit.Profile:
+        return this.getPostsProfile(pageNumber, currentUser);
+      case PostLimit.NewsFeed:
+      default:
+        return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -180,28 +182,28 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-    case PostLimit.Group:
-      match = { group: Types.ObjectId(groupId) };
-      if (!groupId)
+      case PostLimit.Group:
+        match = { group: Types.ObjectId(groupId) };
+        if (!groupId)
+          match = {
+            user: Types.ObjectId(currentUser),
+            group: { $exists: true },
+          };
+        break;
+      case PostLimit.Profile:
         match = {
           user: Types.ObjectId(currentUser),
-          group: { $exists: true },
+          group: { $exists: false },
         };
-      break;
-    case PostLimit.Profile:
-      match = {
-        user: Types.ObjectId(currentUser),
-        group: { $exists: false },
-      };
-      break;
-    case PostLimit.NewsFeed:
-    default:
-      match = {
-        $or: [
-          { user: { $in: userObjectIds }, group: { $exists: false } },
-          { user: Types.ObjectId(currentUser), group: { $exists: true } },
-        ],
-      };
+        break;
+      case PostLimit.NewsFeed:
+      default:
+        match = {
+          $or: [
+            { user: { $in: userObjectIds }, group: { $exists: false } },
+            { user: Types.ObjectId(currentUser), group: { $exists: true } },
+          ],
+        };
     }
     const posts = await this.postModel
       .find(match)
@@ -392,6 +394,14 @@ export class PostsService {
       return groupIds;
     } catch (error) {
       throw new InternalServerErrorException(error);
+    }
+  }
+  public async deleteManyPostsOfGroup(groupId: string): Promise<void> {
+    try {
+      await this.postModel.deleteMany({ group: Types.ObjectId(groupId) })
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
     }
   }
 }
