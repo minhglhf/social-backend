@@ -1,6 +1,6 @@
 export const VIET_NAM_TZ = 'Asia/Ho_Chi_Minh';
 
-export const clientUrl = '';
+export const clientUrl = 'http://localhost:3000/login/reset';
 
 export const FOLLOWINGS_PER_PAGE = 20;
 export const POSTS_PER_PAGE = 8;
