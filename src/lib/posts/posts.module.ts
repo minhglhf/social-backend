@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from 'src/entities/post.entity';
 import { MapsHelper } from 'src/helpers/maps.helper';
@@ -20,7 +20,7 @@ import { PostsService } from './providers/posts.service';
     ]),
     MediaFilesModule,
     HashtagsModule,
-    GroupsModule,
+    forwardRef(() => GroupsModule),
     FollowingsModule,
   ],
   controllers: [PostsController],
