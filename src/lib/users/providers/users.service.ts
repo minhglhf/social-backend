@@ -33,7 +33,7 @@ export class UsersService {
     private stringHandlers: StringHandlersHelper,
     private mediaFilesService: MediaFilesService,
     private followingsService: FollowingsService,
-  ) { }
+  ) {}
   public async findUserById(id: string): Promise<UserDocument> {
     try {
       return await this.userModel.findById({ id });
@@ -94,8 +94,15 @@ export class UsersService {
         .populate('address.district', ['_id', 'name'], District.name)
         .populate('address.ward', ['_id', 'name'], Ward.name)
         .select(['-password', '-__v']);
-      const checkFollowed = await this.followingsService.checkIfFollowed(currentUserId.toString(), userId);
-      return this.mapsHelper.mapToUserProfile(user, currentUserId === userId, checkFollowed !== null);
+      const checkFollowed = await this.followingsService.checkIfFollowed(
+        currentUserId.toString(),
+        userId,
+      );
+      return this.mapsHelper.mapToUserProfile(
+        user,
+        currentUserId === userId,
+        checkFollowed !== null,
+      );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -259,7 +266,7 @@ export class UsersService {
     search: string,
     pageNumber: number,
   ): Promise<FollowingsOutput[]> {
-    search = search.trim();
+    search = this.stringHandlers.removeAccent(search.trim());
     if (!search) return [];
     let limit = SEARCH_USER_PER_PAGE;
     let skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;

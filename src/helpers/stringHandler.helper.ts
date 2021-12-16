@@ -33,8 +33,15 @@ export class StringHandlersHelper {
   public getHashtagFromString(description: string): string[] {
     let result = [];
     result = description.match(/#[a-z0-9_]+/g) as [string];
-    if (!result) return []
+    if (!result) return [];
     return result;
+  }
+  public getStartAndEndDate(tz: string): string[] {
+    dayjs.extend(timezone);
+    dayjs.extend(utc);
+    const end = dayjs().tz(tz).format();
+    const start = dayjs().subtract(1, 'week').tz(tz).format();
+    return [start, end];
   }
   public getDateWithTimezone(date: Date | string, tz: string): string {
     dayjs.extend(timezone);

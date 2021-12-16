@@ -22,7 +22,7 @@ import { Activation, ActivationDocument } from 'src/entities/activation.entity';
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
-import { VIET_NAM_TZ } from 'src/utils/constants';
+import { PASSWORD_LINK_EXPIRE_MINUTES, VIET_NAM_TZ } from 'src/utils/constants';
 import { PasswordResetInput } from 'src/dtos/user/passwordReset.dto';
 import { MailService } from 'src/mail/mail.service';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
@@ -129,7 +129,10 @@ export class UsersAuthService {
       dayjs.extend(timezone);
       dayjs.extend(utc);
       const token = this.stringHandlersHelper.generateString(60);
-      const expireIn = dayjs().tz(VIET_NAM_TZ).add(1, 'm').format();
+      const expireIn = dayjs()
+        .tz(VIET_NAM_TZ)
+        .add(PASSWORD_LINK_EXPIRE_MINUTES, 'm')
+        .format();
 
       await this.passwordResetModel.findOneAndUpdate(
         { email: email },

@@ -19,6 +19,7 @@ import { UsersAuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersAuthService } from './providers/auth.service';
 import { UsersService } from './providers/users.service';
+import { UsersAddressService } from './providers/usersAddress.service';
 
 @Module({
   imports: [
@@ -41,10 +42,16 @@ import { UsersService } from './providers/users.service';
     AddressesModule,
     MediaFilesModule,
     forwardRef(() => FollowingsModule),
-    GroupsModule
+    GroupsModule,
   ],
   controllers: [UsersAuthController, UsersController],
-  providers: [UsersService, UsersAuthService, StringHandlersHelper, MapsHelper],
-  exports: [UsersService, UsersAuthService],
+  providers: [
+    UsersService,
+    UsersAuthService,
+    StringHandlersHelper,
+    MapsHelper,
+    UsersAddressService,
+  ],
+  exports: [UsersService, UsersAuthService, UsersAddressService],
 })
-export class UsersModule { }
+export class UsersModule {}

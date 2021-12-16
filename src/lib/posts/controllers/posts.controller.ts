@@ -11,6 +11,7 @@ import {
   BadRequestException,
   Query,
   ParseIntPipe,
+  Param,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express/multer';
 import {
@@ -18,6 +19,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -62,6 +64,29 @@ export class PostsController {
     );
   }
 
+  @Get('search/posts')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ description: 'Tìm kiếm post' })
+  @ApiQuery({
+    type: String,
+    name: 'search',
+    description:
+      'Nhập chuỗi tìm kiếm, chuỗi có thể bao gồm nhiều hashtag và string',
+  })
+  @ApiQuery({
+    type: Number,
+    name: 'page',
+    description:
+      'Nhập số tự nhiên bắt đầu từ 0 tương ứng từng page, nếu nhập page <= 0 thì auto là page đầu tiên',
+  })
+  async searchUsers(
+    @Query('search') search: string,
+    @Query('page', ParseIntPipe) pageNumber,
+    @Request() req,
+  ) {
+    return this.postsService.searchPosts(req.user.userId, search, pageNumber);
+  }
+
   @Get('posts')
   @ApiQuery({
     type: Number,
@@ -79,7 +104,8 @@ export class PostsController {
     type: String,
     name: 'groupId',
     required: false,
-    description: 'Nếu chọn phạm vi là post thì thêm groupId',
+    description:
+      'Nếu chọn phạm vi là post thì thêm groupId, nếu không có groupId thì sẽ lấy tất cả post trong các group đã tham gia',
   })
   @ApiQuery({
     type: String,
@@ -105,5 +131,25 @@ export class PostsController {
       postLimit,
       groupId,
     );
+  }
+  @Get('trending')
+  @ApiOperation({
+    description: 'các post có nhiều react nhất, mặc định lấy 20 post',
+  })
+  async getTrending(@Request() req) {
+    return this.postsService.getTrending(req.user.userId);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('post/:postId')
+  @ApiParam({
+    type: String,
+    name: 'postId',
+    description: 'Id của post muốn lấy thông tin',
+  })
+  @ApiOperation({ description: 'Lấy thông tin của post theo id' })
+  async getPostById(@Param('postId') postId: string, @Request() req) {
+    console.log(req.user.userId);
+
+    return this.postsService.getPostById(postId, req.user.userId);
   }
 }

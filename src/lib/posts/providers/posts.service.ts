@@ -1,30 +1,42 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
+import { userInfo } from 'os';
 import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
 import { GroupDocument } from 'src/entities/group.entity';
 import { FileType, Post, PostDocument } from 'src/entities/post.entity';
+import { UserDocument } from 'src/entities/user.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { GroupsService } from 'src/lib/groups/groups.service';
 import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
 import { MediaFilesService } from 'src/lib/mediaFiles/mediaFiles.service';
-import { POSTS_PER_PAGE, VIET_NAM_TZ } from 'src/utils/constants';
+import {
+  GROUPS_SUGGESSTION_LENGTH,
+  POSTS_PER_PAGE,
+  TRENDING_LENGTH,
+  VIET_NAM_TZ,
+} from 'src/utils/constants';
 import { PostLimit } from 'src/utils/enums';
 @Injectable()
 export class PostsService {
   constructor(
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private stringHandlersHelper: StringHandlersHelper,
+    private mapsHelper: MapsHelper,
     private filesService: MediaFilesService,
     private followingsService: FollowingsService,
-    private groupsService: GroupsService,
+    @Inject(forwardRef(() => GroupsService)) private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   public async createNewPost(
     userId: string,
@@ -120,8 +132,10 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     try {
-      if (!(await this.groupsService.IsMemberOfGroup(currentUser, groupId)))
-        throw new BadRequestException('You have not joined the group');
+      if (groupId) {
+        if (!(await this.groupsService.IsMemberOfGroup(currentUser, groupId)))
+          throw new BadRequestException('You have not joined the group');
+      }
       return await this.getPosts(
         pageNumber,
         currentUser,
@@ -168,11 +182,16 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-    case PostLimit.Group:
-      match = { group: Types.ObjectId(groupId) };
-      break;
-    case PostLimit.Profile:
-      match = {
+      case PostLimit.Group:
+        match = { group: Types.ObjectId(groupId) };
+        if (!groupId)
+          match = {
+            user: Types.ObjectId(currentUser),
+            group: { $exists: true },
+          };
+        break;
+      case PostLimit.Profile:
+        match = {
           user: Types.ObjectId(currentUser),
           group: { $exists: false },
         };
@@ -194,34 +213,9 @@ export class PostsService {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    const result = posts.map((post) => {
-      const postId = (post as any)._id;
-      const createdAt = this.stringHandlersHelper.getDateWithTimezone(
-        String((post as any).createdAt),
-        VIET_NAM_TZ,
-      );
-      const user = post.user as any;
-      const reactions = this.getReactions(post.reactions);
-      const groupId = (post.group as any)?._id;
-      const groupName = (post.group as unknown as GroupDocument)?.name;
-      const groupBackgroundImage = (post.group as unknown as GroupDocument)
-        ?.backgroundImage;
-      return {
-        postId: postId,
-        groupId: groupId?.toString(),
-        groupBackgroundImage: groupBackgroundImage,
-        groupName: groupName,
-        userId: user._id,
-        userDisplayName: user.displayName,
-        userAvatar: user.avatar,
-        description: post.description,
-        files: post.mediaFiles,
-        reactions: reactions,
-        comments: post.comments,
-        isCurrentUser: user._id.toString() === currentUser,
-        createdAt: createdAt,
-      };
-    });
+    const result = posts.map((post) =>
+      this.mapsHelper.mapToPostOutPut(post, currentUser),
+    );
     return result;
   }
 
@@ -231,6 +225,7 @@ export class PostsService {
       const limit = POSTS_PER_PAGE;
       const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * limit;
       search = search.trim();
+      // console.log(search)
       const hashtagsInsearch =
         this.stringHandlersHelper.getHashtagFromString(search);
       let rmwp = search.split(' ').join('');
@@ -240,16 +235,22 @@ export class PostsService {
       if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
         return this.searchPostByHashtags(hashtagsInsearch, limit, skip);
       } else {
+        console.log(search);
         const posts = await this.postModel
-          // .find({ description: { $regex: search } },)
-          .find({ $text: { $search: search } })
+          .find({ description: { $regex: search } })
+          // .find({ $text: { $search: search } })
+          .populate('user', ['avatar', 'displayName'])
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
+
+        const postsResult = posts.map((post) =>
+          this.mapsHelper.mapToPostOutPut(post, userId),
+        );
         return {
           searchResults: posts.length,
-          posts,
+          postsResult,
         };
       }
     } catch (err) {
@@ -299,16 +300,108 @@ export class PostsService {
       throw new InternalServerErrorException(err);
     }
   }
-  private getReactions(reactions: Reactions): Reactions {
-    const reactionsArr = Object.entries<number>(reactions).sort((el1, el2) => {
-      return Number(el2[1]) - Number(el1[1]);
-    });
-    let total = 0;
-    for (const key in reactions) total += reactions[key];
-    const result: Reactions = Object.fromEntries<number>(
-      reactionsArr.slice(0, 3).filter((i) => Number(i[1]) > 0),
-    );
-    result.total = total;
-    return result;
+  public async getTrending(currentUser: string): Promise<PostOutput[]> {
+    try {
+      const posts: PostDocument[] = await this.postModel.aggregate([
+        {
+          $addFields: {
+            total: {
+              $sum: [
+                '$reactions.loves',
+                '$reactions.likes',
+                '$reactions.hahas',
+                '$reactions.wows',
+                '$reactions.sads',
+                '$reactions.angrys',
+              ],
+            },
+          },
+        },
+        {
+          $sort: {
+            total: -1,
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            let: { user: 'user' },
+            pipeline: [{ $project: { _id: 1, displayName: 1, avatar: 1 } }],
+            as: 'user',
+          },
+        },
+        { $match: { group: { $exists: false } } },
+        {
+          $project: {
+            user: { $arrayElemAt: ['$user', 0] },
+            description: 1,
+            mediaFiles: 1,
+            reactions: 1,
+            comments: 1,
+            createdAt: 1,
+          },
+        },
+
+        { $limit: TRENDING_LENGTH },
+      ]);
+
+      const result = posts.map((post) =>
+        this.mapsHelper.mapToPostOutPut(post, currentUser),
+      );
+      return result;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async getPostById(
+    postId: string,
+    currentUser: string,
+  ): Promise<PostOutput> {
+    try {
+      const post = await await this.postModel
+        .findById(postId)
+        .populate('user', ['displayName', 'avatar'])
+        .populate('group', ['_id', 'name', 'backgroundImage']);
+      return this.mapsHelper.mapToPostOutPut(post, currentUser);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async getMostPostsGroupIds(userId: string): Promise<any[]> {
+    try {
+      const time = this.stringHandlersHelper.getStartAndEndDate(VIET_NAM_TZ);
+      const start = new Date(time[0]);
+      const end = new Date(time[1]);
+      const groupIds = await this.postModel.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: start, $lte: end },
+            user: Types.ObjectId(userId),
+            group: { $exists: true },
+          },
+        },
+        { $group: { _id: { group: '$group' }, totalPosts: { $sum: 1 } } },
+        { $sort: { totalPosts: -1 } },
+        {
+          $project: {
+            groupId: '$_id.group',
+            totalPosts: 1,
+            _id: 0,
+          },
+        },
+        { $limit: GROUPS_SUGGESSTION_LENGTH },
+      ]);
+      return groupIds;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async deleteManyPostsOfGroup(groupId: string): Promise<void> {
+    try {
+      await this.postModel.deleteMany({ group: Types.ObjectId(groupId) })
+    }
+    catch (err) {
+      throw new InternalServerErrorException(err)
+    }
   }
 }

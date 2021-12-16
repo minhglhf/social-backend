@@ -28,10 +28,16 @@ export class Group {
     ref: 'User',
   })
   member: [];
-  @Prop({ type: { admins: { type: Number, required: true }, members: { type: Number, required: true } }, required: true })
+  @Prop({
+    type: {
+      admins: { type: Number, required: true },
+      members: { type: Number, required: true },
+    },
+    required: true,
+  })
   totalMember: {
-    admins: number,
-    members: number
+    admins: number;
+    members: number;
   };
 }
 
