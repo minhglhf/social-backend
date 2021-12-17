@@ -23,7 +23,7 @@ import { PostsService } from '../posts/providers/posts.service';
 export class GroupsService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
-    private filesService: MediaFilesService,
+    @Inject(forwardRef(() => MediaFilesService)) private filesService: MediaFilesService,
     private stringHandlersHelper: StringHandlersHelper, // private postsService: PostsService // private mapsHelper: MapsHelper,
     @Inject(forwardRef(() => PostsService)) private postsService: PostsService
   ) { }
@@ -302,14 +302,16 @@ export class GroupsService {
   ): Promise<boolean> {
     try {
       const match = {
-        $or: [
+        $and: [
           {
             _id: Types.ObjectId(groupId),
-            'member.member_id': Types.ObjectId(userId),
           },
           {
-            _id: Types.ObjectId(groupId),
-            admin_id: Types.ObjectId(userId.toString().trim()),
+            $or: [
+              { admin_id: Types.ObjectId(userId.toString()) },
+              { 'member.member_id': Types.ObjectId(userId) },
+              { privacy: Privacy.Public },
+            ],
           },
         ],
       };
