@@ -32,9 +32,9 @@ export class StringHandlersHelper {
   }
   public getHashtagFromString(description: string): string[] {
     let result = [];
-    result = description.match(/#[a-z0-9_]+/g) as [string];
+    result = description.match(/#[a-zA-Z0-9_]+/g) as [string];
     if (!result) return [];
-    return result;
+    return [...new Set(result)];
   }
   public getStartAndEndDate(tz: string): string[] {
     dayjs.extend(timezone);
