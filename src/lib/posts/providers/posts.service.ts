@@ -32,11 +32,13 @@ export class PostsService {
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private stringHandlersHelper: StringHandlersHelper,
     private mapsHelper: MapsHelper,
+    @Inject(forwardRef(() => MediaFilesService))
     private filesService: MediaFilesService,
     private followingsService: FollowingsService,
-    @Inject(forwardRef(() => GroupsService)) private groupsService: GroupsService,
+    @Inject(forwardRef(() => GroupsService))
+    private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) { }
+  ) {}
 
   public async createNewPost(
     userId: string,
@@ -398,10 +400,9 @@ export class PostsService {
   }
   public async deleteManyPostsOfGroup(groupId: string): Promise<void> {
     try {
-      await this.postModel.deleteMany({ group: Types.ObjectId(groupId) })
-    }
-    catch (err) {
-      throw new InternalServerErrorException(err)
+      await this.postModel.deleteMany({ group: Types.ObjectId(groupId) });
+    } catch (err) {
+      throw new InternalServerErrorException(err);
     }
   }
 }
