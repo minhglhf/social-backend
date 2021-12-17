@@ -1,10 +1,17 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MediaFileDto } from 'src/dtos/mediaFile/mediaFile.dto';
 import { MediaFile, MediaFileDocument } from 'src/entities/mediaFile.entity';
 import { FileType } from 'src/entities/post.entity';
 import { User, UserDocument } from 'src/entities/user.entity';
+import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { UploadsService } from 'src/uploads/uploads.service';
 import {
@@ -12,13 +19,17 @@ import {
   VIDEOS_PERPAGE,
   VIET_NAM_TZ,
 } from 'src/utils/constants';
-import { File } from 'src/utils/enums';
+import { File, Privacy } from 'src/utils/enums';
+import { GroupsService } from '../groups/groups.service';
 @Injectable()
 export class MediaFilesService {
   constructor(
     @InjectModel(MediaFile.name) private fileModel: Model<MediaFileDocument>,
     private stringHandlersHelper: StringHandlersHelper,
+    private mapsHelper: MapsHelper,
     private uploadsService: UploadsService,
+    @Inject(forwardRef(() => GroupsService))
+    private groupsService: GroupsService,
   ) {}
   public async saveFile(
     uploadFile: Express.Multer.File,
@@ -31,17 +42,30 @@ export class MediaFilesService {
       const fileUrl = await this.uploadsService.uploadFile(uploadFile, path);
       const type = uploadFile.mimetype.split('/')[0];
       const newFile = {
-        user: userId,
-        group: groupId,
+        user: Types.ObjectId(userId),
+        group: groupId ? Types.ObjectId(groupId) : undefined,
         type: type,
         des: des,
         url: fileUrl,
-        groupId: groupId,
       };
-      if (!groupId) delete newFile.groupId;
       await new this.fileModel(newFile).save();
       const file = { url: fileUrl, type: type };
       return file;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+  public async getFilesInGroup(
+    type: string,
+    userId: string,
+    pageNumber: number,
+    groupId: string,
+  ): Promise<MediaFileDto[]> {
+    try {
+      if (!this.groupsService.IsMemberOfGroup(userId, groupId)) {
+        throw new BadRequestException('You have not joined the group');
+      }
+      return await this.getFiles(type, userId, pageNumber, groupId);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -58,20 +82,19 @@ export class MediaFilesService {
         ? (pageNumber = 0)
         : pageNumber * MEDIA_FILES_PER_PAGE;
     const match = groupId
-      ? { user: userId, group: groupId }
+      ? { user: Types.ObjectId(userId), group: Types.ObjectId(groupId) }
       : { user: userId, group: { $exists: false } };
+
     switch (type) {
-      case File.Video:
-        (match as any).type = File.Video;
-        break;
-      case File.Image:
-        (match as any).type = File.Image;
-        break;
-      case File.All:
-      default:
-        delete match.group;
-        delete match.user;
-        break;
+    case File.Video:
+      (match as any).type = File.Video;
+      break;
+    case File.Image:
+      (match as any).type = File.Image;
+      break;
+    case File.All:
+    default:
+      break;
     }
     const files = await this.fileModel
       .find(match)
@@ -80,69 +103,83 @@ export class MediaFilesService {
       .skip(skip)
       .limit(limit);
 
-    return files.map((file) => {
-      const avatar = (file.user as unknown as UserDocument).avatar;
-      const displayName = (file.user as unknown as UserDocument).displayName;
-      const userId = (file.user as any)._id;
-      const createdAt = this.stringHandlersHelper.getDateWithTimezone(
-        String((file as any).createdAt),
-        VIET_NAM_TZ,
-      );
-      if (file.group) {
-        return {
-          userId: userId,
-          displayName: displayName,
-          avatar: avatar,
-          des: file.des,
-          url: file.url,
-          type: file.type,
-          createdAt: createdAt,
-          groupId: file.group.toString(),
-        };
-      }
-      return {
-        userId: userId,
-        displayName: displayName,
-        avatar: avatar,
-        des: file.des,
-        url: file.url,
-        type: file.type,
-        createdAt: createdAt,
-      };
-    });
+    return files.map((file) => this.mapsHelper.mapToMediaFileDto(file));
   }
-  public async getVideosWatch(pageNumber: number): Promise<MediaFileDto[]> {
+  public async getVideosWatch(
+    pageNumber: number,
+    userId: string,
+  ): Promise<MediaFileDto[]> {
     try {
       const limit = VIDEOS_PERPAGE;
       const skip =
         !pageNumber || pageNumber < 0 ? 0 : pageNumber * VIDEOS_PERPAGE;
-      const videos = await this.fileModel
-        .find({
-          group: { $exists: false },
-          type: File.Video,
-        })
-        .populate('user', ['displayName', 'avatar'])
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(skip);
-      return videos.map((video) => {
-        const displayName = (video.user as unknown as UserDocument).displayName;
-        const avatar = (video.user as unknown as UserDocument).avatar;
-        const userId = (video as any).user._id.toString();
-        const createdAt = this.stringHandlersHelper.getDateWithTimezone(
-          (video as any).createdAt,
-          VIET_NAM_TZ,
-        );
-        return {
-          userId: userId,
-          displayName: displayName,
-          avatar: avatar,
-          des: video.des,
-          url: video.url,
-          type: video.type,
-          createdAt: createdAt,
-        };
-      });
+      const videos = await this.fileModel.aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            let: { user: '$user' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$$user', '$_id'] } } },
+              { $project: { avatar: 1, displayName: 1 } },
+            ],
+            as: 'user',
+          },
+        },
+        {
+          $lookup: {
+            from: 'groups',
+            let: {
+              group: '$group',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$_id', '$$group'] },
+                      {
+                        $or: [
+                          { $eq: ['$admin_id', Types.ObjectId(userId)] },
+                          { $in: [Types.ObjectId(userId), '$member'] },
+                          { $eq: ['$privacy', Privacy.Public] },
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              { $project: { name: 1, backgroundImage: 1 } },
+            ],
+            as: 'group',
+          },
+        },
+        {
+          $match: {
+            type: File.Video,
+          },
+        },
+        {
+          $project: {
+            user: { $arrayElemAt: ['$user', 0] },
+            group: { $arrayElemAt: ['$group', 0] },
+            type: 1,
+            des: 1,
+            url: 1,
+            createdAt: 1,
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: limit,
+        },
+      ]);
+
+      return videos.map((video) => this.mapsHelper.mapToMediaFileDto(video));
     } catch (error) {
       throw new InternalServerErrorException();
     }

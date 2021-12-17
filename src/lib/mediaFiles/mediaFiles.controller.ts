@@ -1,7 +1,15 @@
-import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -56,7 +64,28 @@ export class MediaFilesController {
     description:
       'Video cho phần watch, lấy theo thứ tự gần đây nhất, của cả app',
   })
-  async getVideosWatch(@Query('pageNumber') pageNumber: number) {
-    return this.mediaFilesService.getVideosWatch(pageNumber);
+  async getVideosWatch(
+    @Query('pageNumber') pageNumber: number,
+    @Request() req,
+  ) {
+    return this.mediaFilesService.getVideosWatch(pageNumber, req.user.userId);
+  }
+  @Get('files/in/group/:groupId')
+  @ApiParam({ type: String, name: 'groupId' })
+  @ApiQuery({ type: Number, name: 'pageNumber' })
+  @ApiQuery({ type: String, enum: File, name: 'type' })
+  @ApiOperation({ description: 'Lấy file trong group' })
+  async getMediaFilesGroup(
+    @Request() req,
+    @Param('groupId') groupId: string,
+    @Query('pageNumber') pageNumber: number,
+    @Query('type') fileType: string,
+  ) {
+    return this.mediaFilesService.getFilesInGroup(
+      fileType,
+      req.user.userId,
+      pageNumber,
+      groupId,
+    );
   }
 }

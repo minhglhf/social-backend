@@ -6,5 +6,7 @@ export class MediaFileDto {
   url: string;
   type: string;
   groupId?: string;
+  groupName?: string;
+  groupBackgroundImage?: string;
   createdAt: string;
 }

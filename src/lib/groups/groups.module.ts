@@ -31,4 +31,4 @@ import { GroupsService } from './groups.service';
   providers: [GroupsService, StringHandlersHelper],
   exports: [GroupsService],
 })
-export class GroupsModule { }
+export class GroupsModule {}
