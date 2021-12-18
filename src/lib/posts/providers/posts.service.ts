@@ -405,4 +405,17 @@ export class PostsService {
       throw new InternalServerErrorException(err);
     }
   }
+  public async getPostIdsInProfile(userId: string): Promise<string[]> {
+    try {
+      const posts = await this.postModel
+        .find({
+          user: Types.ObjectId(userId),
+          group: { $exists: false },
+        })
+        .select(['_id']);
+      return posts.map((post) => (post as any)._id.toString());
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
 }

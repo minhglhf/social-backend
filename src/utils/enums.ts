@@ -42,7 +42,7 @@ export enum SearchTypes {
   All = 'all',
   Users = 'users',
   Posts = 'posts',
-  Groups = 'groups'
+  Groups = 'groups',
 }
 export enum PostLimit {
   Group = 'group',
@@ -54,4 +54,10 @@ export enum LocationType {
   Province = 'province',
   District = 'district',
   Ward = 'ward',
+}
+
+export enum Time {
+  Week = 'week',
+  Month = 'month',
+  Year = 'year',
 }

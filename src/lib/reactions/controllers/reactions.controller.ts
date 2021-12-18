@@ -18,9 +18,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { time } from 'console';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ReactionType, ReactionTypeQuery } from 'src/utils/enums';
+import { ReactionType, ReactionTypeQuery, Time } from 'src/utils/enums';
 import { ReactionsService } from '../providers/reactions.service';
 
 @Controller('reaction')
@@ -29,7 +30,26 @@ import { ReactionsService } from '../providers/reactions.service';
 @ApiBearerAuth()
 export class ReactionsController {
   constructor(private reactionsSerivce: ReactionsService) {}
-
+  @Get('/statistic')
+  @ApiOperation({
+    description: 'Thống kê reactions trong profile theo thời gian',
+  })
+  @ApiQuery({
+    type: String,
+    name: 'userId',
+    description:
+      'id của user muốn lấy thống kê, nếu là user hiện tại thì không cần truyền',
+    required: false,
+  })
+  @ApiQuery({ type: String, enum: Time, name: 'time' })
+  async getReactionsSatistic(
+    @Query('time') time: string,
+    @Query('userId') userId: string,
+    @Request() req,
+  ) {
+    if (!userId) userId = req.user.userId;
+    return this.reactionsSerivce.getReactionStatisticByTime(userId, time);
+  }
   @Post('/addReactionToPost')
   @ApiOperation({
     description: 'thêm reaction mới',
@@ -93,7 +113,6 @@ export class ReactionsController {
       pageNumber,
     );
   }
-
   @Delete('/deleteReaction')
   @ApiOperation({
     description: 'xoa reaction',

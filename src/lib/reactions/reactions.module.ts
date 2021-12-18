@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Reaction, ReactionSchema } from 'src/entities/reaction.entity';
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsModule } from '../followings/followings.module';
 import { GroupsModule } from '../groups/groups.module';
 import { PostsModule } from '../posts/posts.module';
@@ -21,7 +22,7 @@ import { ReactionsService } from './providers/reactions.service';
     FollowingsModule,
     forwardRef(() => GroupsModule)
   ],
-  providers: [ReactionsService],
+  providers: [ReactionsService, StringHandlersHelper],
   controllers: [ReactionsController],
   exports: [ReactionsService],
 })
