@@ -1,6 +1,7 @@
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
+import { Time } from 'src/utils/enums';
 export class StringHandlersHelper {
   public generateString(length: number) {
     let result = '';
@@ -43,9 +44,30 @@ export class StringHandlersHelper {
     const start = dayjs().subtract(1, 'week').tz(tz).format();
     return [start, end];
   }
-  public getDateWithTimezone(date: Date | string, tz: string): string {
+  public getDateWithTimezone(
+    date: Date | string,
+    tz: string,
+    format?: string,
+  ): string {
     dayjs.extend(timezone);
     dayjs.extend(utc);
-    return dayjs(date).tz(tz).format('YYYY-MM-DDTHH:mm:ss');
+    if (!format) format = 'YYYY-MM-DDTHH:mm:ss';
+    return dayjs(date).tz(tz).format(format);
+  }
+  public getStartAndEndDateWithTime(time: string): string[] {
+    dayjs.extend(timezone);
+    dayjs.extend(utc);
+    const end = dayjs().utc();
+    let start;
+    switch (time) {
+      case Time.Week:
+        start = end.subtract(7, 'day').utc();
+        break;
+      case Time.Month:
+      default:
+        start = end.subtract(30, 'day').utc();
+        break;
+    }
+    return [start.format(), end.format()];
   }
 }
