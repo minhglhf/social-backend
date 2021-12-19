@@ -7,21 +7,24 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UserReaction } from 'src/dtos/reaction/reationsList.dto';
+import { StatisticOutPut } from 'src/dtos/statistic/statistic.dto';
 import { Reaction, ReactionDocument } from 'src/entities/reaction.entity';
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { FollowingsService } from 'src/lib/followings/providers/followings.service';
 import { PostsService } from 'src/lib/posts/providers/posts.service';
 import { UsersService } from 'src/lib/users/providers/users.service';
-import { FOLLOWINGS_PER_PAGE } from 'src/utils/constants';
+import { FOLLOWINGS_PER_PAGE, VIET_NAM_TZ } from 'src/utils/constants';
 import { ReactionType, ReactionTypeQuery } from 'src/utils/enums';
 
 @Injectable()
 export class ReactionsService {
   constructor(
     @InjectModel(Reaction.name) private reactionModel: Model<ReactionDocument>,
+    private stringHandlersHelper: StringHandlersHelper,
     private postService: PostsService,
     private usersSerivce: UsersService,
     private followingService: FollowingsService,
-  ) { }
+  ) {}
   public async addReactionToPost(userId, postId, reaction) {
     try {
       const checkPost = await this.postService.getPost(postId);
@@ -32,7 +35,7 @@ export class ReactionsService {
         postId: Types.ObjectId(postId),
         userId: Types.ObjectId(userId),
       });
-      console.log(checkIfReact)
+      console.log(checkIfReact);
       if (checkIfReact) {
         // throw new BadRequestException('bạn đã thêm react cho post này');
         const updateOldReactCount = this.getUpdate(checkIfReact.react, -1);
@@ -46,13 +49,17 @@ export class ReactionsService {
             postId,
             updateNewReactCount,
           ),
-          this.reactionModel.findByIdAndUpdate(checkIfReact._id, {
-            react: reaction
-          }, {
-            new: true
-          })
-        ])
-        return updateReactCount[2]
+          this.reactionModel.findByIdAndUpdate(
+            checkIfReact._id,
+            {
+              react: reaction,
+            },
+            {
+              new: true,
+            },
+          ),
+        ]);
+        return updateReactCount[2];
       }
       const updateReactCount = this.getUpdate(reaction, 1);
       await this.postService.updatePostCommentAndReactionCount(
@@ -167,5 +174,66 @@ export class ReactionsService {
         break;
     }
     return update;
+  }
+  public async getReactionStatisticByTime(
+    userId: string,
+    time: string,
+  ): Promise<StatisticOutPut[]> {
+    try {
+
+      const range = this.stringHandlersHelper.getStartAndEndDateWithTime(time);
+      const postsToSearch = (
+        await this.postService.getPostIdsInProfile(userId)
+      ).map((postId) => Types.ObjectId(postId));
+      const reactionsStatistic = await this.reactionModel.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: new Date(range[0]), $lte: new Date(range[1]) },
+            postId: { $in: postsToSearch },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: { date: '$createdAt', timezone: VIET_NAM_TZ } },
+              month: { $month: { date: '$createdAt', timezone: VIET_NAM_TZ } },
+              day: {
+                $dayOfMonth: { date: '$createdAt', timezone: VIET_NAM_TZ },
+              },
+            },
+            date: { $first: '$createdAt' },
+            scales: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { date: 1 },
+        },
+        {
+          $project: {
+            date: 1,
+            scales: 1,
+            _id: 0,
+          },
+        },
+      ]);
+
+      const format = 'YYYY-MM-DD';
+      return reactionsStatistic.map((i) => {
+        const scales = (i as any).scales;
+        const date = this.stringHandlersHelper.getDateWithTimezone(
+          (i as any).date,
+          VIET_NAM_TZ,
+          format,
+        );
+        return {
+          scales: scales,
+          date: date,
+        };
+      });
+    } catch (error) {
+      console.log(error);
+
+      throw new InternalServerErrorException(error);
+    }
   }
 }

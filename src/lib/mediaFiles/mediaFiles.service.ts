@@ -83,7 +83,7 @@ export class MediaFilesService {
         : pageNumber * MEDIA_FILES_PER_PAGE;
     const match = groupId
       ? { user: Types.ObjectId(userId), group: Types.ObjectId(groupId) }
-      : { user: userId, group: { $exists: false } };
+      : { user: Types.ObjectId(userId), group: { $exists: false } };
 
     switch (type) {
     case File.Video:
