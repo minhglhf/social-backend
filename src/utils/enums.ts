@@ -65,4 +65,11 @@ export enum Time {
   Week = 'week',
   Month = 'month',
   Year = 'year',
+  All = 'all',
+}
+export enum TimeCheck {
+  Day = 'day',
+  Week = 'week',
+  Month = 'month',
+  Year = 'year',
 }

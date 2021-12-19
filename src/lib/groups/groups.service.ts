@@ -23,10 +23,11 @@ import { PostsService } from '../posts/providers/posts.service';
 export class GroupsService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
-    @Inject(forwardRef(() => MediaFilesService)) private filesService: MediaFilesService,
+    @Inject(forwardRef(() => MediaFilesService))
+    private filesService: MediaFilesService,
     private stringHandlersHelper: StringHandlersHelper, // private postsService: PostsService // private mapsHelper: MapsHelper,
-    @Inject(forwardRef(() => PostsService)) private postsService: PostsService
-  ) { }
+    @Inject(forwardRef(() => PostsService)) private postsService: PostsService,
+  ) {}
 
   public async create(
     userId: string,
@@ -170,8 +171,8 @@ export class GroupsService {
     try {
       await Promise.all([
         this.groupModel.deleteOne({ _id: groupId }),
-        this.postsService.deleteManyPostsOfGroup(groupId)
-      ])
+        this.postsService.deleteManyPostsOfGroup(groupId),
+      ]);
     } catch (err) {
       throw new InternalServerErrorException(err);
     }
@@ -296,6 +297,31 @@ export class GroupsService {
       throw new InternalServerErrorException(err);
     }
   }
+  public async getGroup(
+    groupId: string,
+    userId: string,
+  ): Promise<Partial<GroupDocument>> {
+    try {
+      const match = {
+        $and: [
+          {
+            _id: Types.ObjectId(groupId),
+          },
+          {
+            $or: [
+              { admin_id: Types.ObjectId(userId) },
+              { 'member.member_id': Types.ObjectId(userId) },
+            ],
+          },
+        ],
+      };
+      return await this.groupModel.findOne(match);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  // Hàm này chỉ dùng lúc get thôi
   public async IsMemberOfGroup(
     userId: string,
     groupId: string,

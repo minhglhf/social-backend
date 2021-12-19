@@ -1,7 +1,7 @@
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import * as timezone from 'dayjs/plugin/timezone';
-import { Time } from 'src/utils/enums';
+import { Time, TimeCheck } from 'src/utils/enums';
 export class StringHandlersHelper {
   public generateString(length: number) {
     let result = '';
@@ -35,7 +35,7 @@ export class StringHandlersHelper {
     let result = [];
     result = description.match(/#[a-zA-Z0-9_]+/g) as [string];
     if (!result) return [];
-    return [...new Set(result)];
+    return [...new Set(result)].map((ht) => ht.toLowerCase());
   }
   public getStartAndEndDate(tz: string): string[] {
     dayjs.extend(timezone);
@@ -54,20 +54,36 @@ export class StringHandlersHelper {
     if (!format) format = 'YYYY-MM-DDTHH:mm:ss';
     return dayjs(date).tz(tz).format(format);
   }
-  public getStartAndEndDateWithTime(time: string): string[] {
+  public getStartAndEndDateWithTime(
+    time: string,
+    isStartOfTime?: boolean,
+  ): string[] {
     dayjs.extend(timezone);
     dayjs.extend(utc);
     const end = dayjs().utc();
     let start;
     switch (time) {
-      case Time.Week:
-        start = end.subtract(7, 'day').utc();
+      case TimeCheck.Day:
+        start = end.startOf('day').utc();
         break;
-      case Time.Month:
+      case TimeCheck.Week:
+        start = end.subtract(1, 'week').utc();
+        if (isStartOfTime && isStartOfTime == true)
+          start = end.startOf('week').utc();
+        break;
+      case TimeCheck.Month:
+        start = end.subtract(1, 'month').utc();
+        if (isStartOfTime && isStartOfTime == true)
+          start = end.startOf('month').utc();
+        break;
+      case TimeCheck.Year:
       default:
-        start = end.subtract(30, 'day').utc();
+        start = end.subtract(1, 'year').utc();
+        if (isStartOfTime && isStartOfTime == true)
+          start = end.startOf('year').utc();
         break;
     }
+
     return [start.format(), end.format()];
   }
 }
