@@ -4,7 +4,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
+import { ChatModule } from './lib/chat/chat.module';
+import { ChatGateway } from './lib/chat/gateway/chat.gateway';
 import { CommentsModule } from './lib/comments/comments.module';
+import { ConversationModule } from './lib/conversation/conversation.module';
 import { PostsModule } from './lib/posts/posts.module';
 import { ReactionsModule } from './lib/reactions/reactions.module';
 import { SearchModule } from './lib/search/search.module';
@@ -24,7 +27,8 @@ import { UsersModule } from './lib/users/users.module';
     SearchModule,
     CommentsModule,
     ReactionsModule,
-
+    ChatModule,
+    ConversationModule
   ],
   controllers: [AppController],
   providers: [AppService],

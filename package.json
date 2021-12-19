@@ -29,7 +29,9 @@
     "@nestjs/mongoose": "^8.0.1",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.0.0",
+    "@nestjs/platform-socket.io": "^8.2.3",
     "@nestjs/swagger": "^5.0.9",
+    "@nestjs/websockets": "^8.2.3",
     "bcrypt": "^5.0.1",
     "bull": "^3.29.2",
     "class-transformer": "^0.4.0",
@@ -47,6 +49,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
+    "socket.io": "^4.3.2",
     "swagger-ui-express": "^4.1.6",
     "uuid": "^8.3.2"
   },

@@ -56,6 +56,11 @@ export enum LocationType {
   Ward = 'ward',
 }
 
+export enum TypeInformation {
+  'socket_id' = 'socket_id',
+  'device_id' = 'device_id',
+}
+
 export enum Time {
   Week = 'week',
   Month = 'month',
