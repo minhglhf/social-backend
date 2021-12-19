@@ -38,7 +38,7 @@ export class PostsService {
     @Inject(forwardRef(() => GroupsService))
     private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   public async createNewPost(
     userId: string,
@@ -235,7 +235,7 @@ export class PostsService {
         rmwp = rmwp.replace(ht, '');
       });
       if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
-        return this.searchPostByHashtags(hashtagsInsearch, limit, skip);
+        return this.searchPostByHashtags(hashtagsInsearch, limit, skip, userId);
       } else {
         console.log(search);
         const posts = await this.postModel
@@ -264,6 +264,7 @@ export class PostsService {
     hashtagsArr: string[],
     limit: number,
     skip: number,
+    userId: string
   ) {
     try {
       if (hashtagsArr?.length === 1) {
@@ -279,9 +280,13 @@ export class PostsService {
             .select(['-__v'])
             .skip(skip)
             .limit(limit);
+
+          const postsResult = postByHashtag.map((post) =>
+            this.mapsHelper.mapToPostOutPut(post, userId),
+          );
           return {
             hashtagInfo,
-            postByHashtag,
+            postByHashtag: postsResult,
           };
         }
       } else {
@@ -293,10 +298,17 @@ export class PostsService {
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
+        const postsResult = postByHashtags.map((post) =>
+          this.mapsHelper.mapToPostOutPut(post, userId),
+        );
         return {
           searchReults: postByHashtags.length,
-          postByHashtags,
+          postByHashtags: postsResult,
         };
+        // return {
+        //   searchReults: postByHashtags.length,
+        //   postByHashtags,
+        // };
       }
     } catch (err) {
       throw new InternalServerErrorException(err);
