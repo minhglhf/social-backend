@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CommentSchema, Comment } from 'src/entities/comment.entity';
+import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { PostsModule } from '../posts/posts.module';
 import { UsersModule } from '../users/users.module';
 import { CommentsController } from './controllers/comments.controller';
@@ -17,7 +18,7 @@ import { CommentsService } from './providers/comments.service';
     forwardRef(() => UsersModule),
     PostsModule
   ],
-  providers: [CommentsService],
+  providers: [CommentsService, StringHandlersHelper],
   controllers: [CommentsController],
   exports: [CommentsService],
 })

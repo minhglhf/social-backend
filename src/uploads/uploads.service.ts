@@ -24,14 +24,12 @@ export class UploadsService {
     };
     const firebaseApp = initializeApp(firebaseConfig);
     this.storage = getStorage(firebaseApp);
-
   }
   public async uploadFile(
     file: Express.Multer.File,
     path: string,
   ): Promise<string> {
     try {
-      
       const image = fs.readFileSync(file.path.toString());
 
       if (fs.existsSync(file.path)) {
@@ -49,6 +47,9 @@ export class UploadsService {
         return await getDownloadURL(storageRef);
       }
     } catch (error) {
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
       throw new InternalServerErrorException(error);
     }
   }

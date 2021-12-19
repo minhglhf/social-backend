@@ -14,6 +14,8 @@ import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
 import { StringHandlersHelper } from './stringHandler.helper';
 import { PostDocument } from 'src/entities/post.entity';
 import { GroupDocument } from 'src/entities/group.entity';
+import { MediaFileDocument } from 'src/entities/mediaFile.entity';
+import { MediaFileDto } from 'src/dtos/mediaFile/mediaFile.dto';
 export class MapsHelper {
   stringhandlersHelper: StringHandlersHelper;
   constructor() {
@@ -43,17 +45,17 @@ export class MapsHelper {
       .format('YYYY-MM-DD');
     let sex = '';
     switch (user.sex) {
-      case 0:
-        sex = 'Nữ';
-        break;
-      case 1:
-        sex = 'Nam';
-        break;
-      case 2:
-        sex = 'Khác';
-        break;
-      default:
-        break;
+    case 0:
+      sex = 'Nữ';
+      break;
+    case 1:
+      sex = 'Nam';
+      break;
+    case 2:
+      sex = 'Khác';
+      break;
+    default:
+      break;
     }
     return {
       email: user.email,
@@ -98,10 +100,18 @@ export class MapsHelper {
     });
   }
   private getReactions(reactions: Reactions): Reactions {
-    const reactionsArr = Object.entries<number>(reactions).sort((el1, el2) => {
-      return Number(el2[1]) - Number(el1[1]);
-    });
+    const reactionsArrTemp = Object.entries<number>(reactions).sort(
+      (el1, el2) => {
+        return Number(el2[1]) - Number(el1[1]);
+      },
+    );
     let total = 0;
+    const reactionsArr = reactionsArrTemp.map((i) => {
+      const keySize = i[0].length;
+      const key = i[0];
+      if (key[keySize - 1] === 's') i[0] = key.slice(0, keySize - 1);
+      return i;
+    });
     for (const key in reactions) total += reactions[key];
     const result: Reactions = Object.fromEntries<number>(
       reactionsArr.slice(0, 3).filter((i) => Number(i[1]) > 0),
@@ -136,6 +146,29 @@ export class MapsHelper {
       reactions: reactions,
       comments: post.comments,
       isCurrentUser: user._id.toString() === currentUser,
+      createdAt: createdAt,
+    };
+  }
+  public mapToMediaFileDto(mediaFile: MediaFileDocument): MediaFileDto {
+    const displayName = (mediaFile.user as unknown as UserDocument).displayName;
+    const avatar = (mediaFile.user as unknown as UserDocument).avatar;
+    const userId = (mediaFile as any).user._id.toString();
+    const createdAt = this.stringhandlersHelper.getDateWithTimezone(
+      (mediaFile as any).createdAt,
+      VIET_NAM_TZ,
+    );
+    return {
+      userId: userId,
+      displayName: displayName,
+      avatar: avatar,
+      des: mediaFile.des,
+      url: mediaFile.url,
+      type: mediaFile.type,
+      groupId: (mediaFile.group as any)?._id,
+      groupName: (mediaFile.group as unknown as GroupDocument)?.name,
+      groupBackgroundImage: (mediaFile.group as unknown as GroupDocument)
+        ?.backgroundImage,
+
       createdAt: createdAt,
     };
   }

@@ -42,7 +42,7 @@ export enum SearchTypes {
   All = 'all',
   Users = 'users',
   Posts = 'posts',
-  Groups = 'groups'
+  Groups = 'groups',
 }
 export enum PostLimit {
   Group = 'group',
@@ -61,3 +61,8 @@ export enum TypeInformation {
   'device_id' = 'device_id',
 }
 
+export enum Time {
+  Week = 'week',
+  Month = 'month',
+  Year = 'year',
+}

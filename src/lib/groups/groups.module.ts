@@ -22,13 +22,9 @@ import { GroupsService } from './groups.service';
     ]),
     MediaFilesModule,
     forwardRef(() => PostsModule),
-    // forwardRef(() => FollowingsModule),
-    // forwardRef(() => HashtagsModule),
-    // forwardRef(() => ReactionsModule),
-    // forwardRef(() => CommentsModule)
   ],
   controllers: [GroupsController],
   providers: [GroupsService, StringHandlersHelper],
   exports: [GroupsService],
 })
-export class GroupsModule { }
+export class GroupsModule {}
