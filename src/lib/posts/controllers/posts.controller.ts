@@ -26,7 +26,8 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostInput } from 'src/dtos/post/postNew.dto';
 import { imageOrVideoFileFilter, storage } from 'src/helpers/storage.helper';
-import { PostLimit } from 'src/utils/enums';
+import { HashtagsService } from 'src/lib/hashtags/hashtags.service';
+import { PostLimit, Time } from 'src/utils/enums';
 import { PostsService } from '../providers/posts.service';
 
 @ApiTags('Post')
@@ -34,7 +35,10 @@ import { PostsService } from '../providers/posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(private postsService: PostsService) {}
+  constructor(
+    private postsService: PostsService,
+    private hashtagsService: HashtagsService,
+  ) {}
   @Post('newpostprivate')
   @ApiOperation({ description: 'Tạo Post trong group lẫn cá nhân' })
   @ApiConsumes('multipart/form-data')
@@ -55,7 +59,6 @@ export class PostsController {
         'invalid file provided, [image or video files allowed]',
       );
     }
-
     return this.postsService.createNewPost(
       req.user.userId,
       postPrivateInput.description,
@@ -65,7 +68,6 @@ export class PostsController {
   }
 
   @Get('search/posts')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ description: 'Tìm kiếm post' })
   @ApiQuery({
     type: String,
@@ -86,7 +88,6 @@ export class PostsController {
   ) {
     return this.postsService.searchPosts(req.user.userId, search, pageNumber);
   }
-
   @Get('posts')
   @ApiQuery({
     type: Number,
@@ -132,14 +133,51 @@ export class PostsController {
       groupId,
     );
   }
-  @Get('trending')
+  @Get('trending-hashtags')
+  @ApiQuery({
+    type: String,
+    enum: Time,
+    name: 'time',
+    description:
+      'Thời gian lọc hastag: ngày, tháng, năm. Không chọn thì lấy all',
+  })
   @ApiOperation({
     description: 'các post có nhiều react nhất, mặc định lấy 20 post',
   })
-  async getTrending(@Request() req) {
-    return this.postsService.getTrending(req.user.userId);
+  async getTrending(@Query('time') time: string) {
+    return this.hashtagsService.getTrendingHastags(time);
   }
-  @UseGuards(JwtAuthGuard)
+  @Get('posts/by-hashtag')
+  @ApiQuery({
+    type: Number,
+    name: 'pageNumber',
+  })
+  @ApiQuery({
+    type: String,
+    enum: Time,
+    name: 'time',
+    description:
+      'Thời gian lọc hashtag: ngày, tháng, năm, all. Không chọn thì lấy all',
+  })
+  @ApiQuery({
+    type: String,
+    name: 'hashtag',
+    description: 'Hashtag muốn lấy các posts',
+  })
+  async getPostsByHahstag(
+    @Query('time') time: string,
+    @Query('hashtag') hashtag: string,
+    @Query('pageNumber') pageNumber: number,
+    @Request() req,
+  ) {
+    if (!time) time = Time.All;
+    return this.postsService.getPostsByHashtag(
+      req.user.userId,
+      time,
+      hashtag.trim(),
+      pageNumber,
+    );
+  }
   @Get('post/:postId')
   @ApiParam({
     type: String,
@@ -148,8 +186,6 @@ export class PostsController {
   })
   @ApiOperation({ description: 'Lấy thông tin của post theo id' })
   async getPostById(@Param('postId') postId: string, @Request() req) {
-    console.log(req.user.userId);
-
     return this.postsService.getPostById(postId, req.user.userId);
   }
 }

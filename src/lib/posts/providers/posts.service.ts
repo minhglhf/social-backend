@@ -25,9 +25,49 @@ import {
   TRENDING_LENGTH,
   VIET_NAM_TZ,
 } from 'src/utils/constants';
-import { PostLimit } from 'src/utils/enums';
+import { PostLimit, Privacy, Time } from 'src/utils/enums';
 @Injectable()
 export class PostsService {
+  // Chỉ dùng cho trending
+  public async getPostsByHashtag(
+    currentUser: string,
+    time: string,
+    hashtag: string,
+    pageNumber: number,
+  ): Promise<PostOutput[]> {
+    try {
+      const limit = POSTS_PER_PAGE;
+      const skip =
+        !pageNumber || pageNumber < 0 ? 0 : pageNumber * POSTS_PER_PAGE;
+      let match;
+      if (time === Time.All) {
+        match = { hashtags: hashtag, isPublic: true };
+      } else {
+        const start = new Date(
+          this.stringHandlersHelper.getStartAndEndDateWithTime(time, true)[0],
+        );
+        const end = new Date(
+          this.stringHandlersHelper.getStartAndEndDateWithTime(time, true)[1],
+        );
+
+        match = {
+          hashtags: hashtag,
+          isPublic: true,
+          createdAt: { $gte: start, $lte: end },
+        };
+      }
+      const posts = await this.postModel
+        .find(match)
+        .populate('user', ['displayName', 'avatar'])
+        .populate('group', ['name', 'backgroundImage'])
+        .sort({ createdAt: -1 });
+      return posts.map((post) =>
+        this.mapsHelper.mapToPostOutPut(post, currentUser),
+      );
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
   constructor(
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private stringHandlersHelper: StringHandlersHelper,
@@ -38,7 +78,7 @@ export class PostsService {
     @Inject(forwardRef(() => GroupsService))
     private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) {}
+  ) { }
 
   public async createNewPost(
     userId: string,
@@ -47,9 +87,12 @@ export class PostsService {
     groupId: string,
   ): Promise<void> {
     try {
+      let isPublic = true;
       if (groupId) {
-        if (!(await this.groupsService.IsMemberOfGroup(userId, groupId)))
+        const group = await this.groupsService.getGroup(groupId, userId);
+        if (!group)
           throw new BadRequestException('You have not joined the group');
+        else isPublic = Privacy.Public === group.privacy;
       }
       const fileUrlPromises = [];
       for (const item of imageOrVideos) {
@@ -72,7 +115,8 @@ export class PostsService {
       const newPost: Partial<PostDocument> = {
         group: Types.ObjectId(groupId),
         user: Types.ObjectId(userId),
-        description: description,
+        isPublic: isPublic,
+        description: description.trim(),
         mediaFiles: fileUrls,
         hashtags: hashtags,
         reactions: {
@@ -86,10 +130,12 @@ export class PostsService {
         comments: 0,
       };
       if (!groupId) delete newPost.group;
-      await Promise.all([
-        new this.postModel(newPost).save(),
-        this.hashtagsService.addHastags(hashtags),
-      ]);
+      if (isPublic) {
+        await Promise.all([
+          new this.postModel(newPost).save(),
+          this.hashtagsService.addHastags(hashtags),
+        ]);
+      } else await new this.postModel(newPost).save();
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -235,7 +281,7 @@ export class PostsService {
         rmwp = rmwp.replace(ht, '');
       });
       if (hashtagsInsearch?.length > 0 && rmwp.length === 0) {
-        return this.searchPostByHashtags(hashtagsInsearch, limit, skip);
+        return this.searchPostByHashtags(hashtagsInsearch, limit, skip, userId);
       } else {
         console.log(search);
         const posts = await this.postModel
@@ -264,6 +310,7 @@ export class PostsService {
     hashtagsArr: string[],
     limit: number,
     skip: number,
+    userId: string
   ) {
     try {
       if (hashtagsArr?.length === 1) {
@@ -275,13 +322,18 @@ export class PostsService {
             .find({
               hashtags: hashtagsArr[0],
             })
+            .populate('user', ['avatar', 'displayName'])
             .sort([['date', 1]])
             .select(['-__v'])
             .skip(skip)
             .limit(limit);
+
+          const postsResult = postByHashtag.map((post) =>
+            this.mapsHelper.mapToPostOutPut(post, userId),
+          );
           return {
             hashtagInfo,
-            postByHashtag,
+            postByHashtag: postsResult,
           };
         }
       } else {
@@ -289,14 +341,22 @@ export class PostsService {
           .find({
             hashtags: { $all: hashtagsArr },
           })
+          .populate('user', ['avatar', 'displayName'])
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
           .limit(limit);
+        const postsResult = postByHashtags.map((post) =>
+          this.mapsHelper.mapToPostOutPut(post, userId),
+        );
         return {
           searchReults: postByHashtags.length,
-          postByHashtags,
+          postByHashtags: postsResult,
         };
+        // return {
+        //   searchReults: postByHashtags.length,
+        //   postByHashtags,
+        // };
       }
     } catch (err) {
       throw new InternalServerErrorException(err);
