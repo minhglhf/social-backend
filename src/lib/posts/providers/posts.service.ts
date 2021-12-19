@@ -276,6 +276,7 @@ export class PostsService {
             .find({
               hashtags: hashtagsArr[0],
             })
+            .populate('user', ['avatar', 'displayName'])
             .sort([['date', 1]])
             .select(['-__v'])
             .skip(skip)
@@ -294,6 +295,7 @@ export class PostsService {
           .find({
             hashtags: { $all: hashtagsArr },
           })
+          .populate('user', ['avatar', 'displayName'])
           .sort([['date', 1]])
           .select(['-__v'])
           .skip(skip)
