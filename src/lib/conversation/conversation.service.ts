@@ -74,9 +74,27 @@ export class ConversationService {
                 )
                 .select(['messages', '_id'])
                 // .select(['messages._id'])
-                .populate('messages.chatId', ['author', 'content', 'createdAt'])
-                // .select(['messages._id'])
-                .populate('chatId.author', ['displayName', 'avatar'])
+                .populate({
+                    path: 'messages',
+                    populate: [
+                        {
+                            path: 'chatId',
+                            model: 'Chat',
+                            select: 'author content createdAt',
+                            populate: [
+                                {
+                                    path: 'author',
+                                    model: 'User',
+                                    select: 'displayName avatar'
+                                }
+                            ]
+                        }
+                    ],
+                    select: 'messages'
+                })
+            // .populate('messages.chatId', ['author', 'content', 'createdAt'])
+            // .select(['messages._id'])
+            // /.populate('messages.chatId.author', ['displayName', 'avatar'])
             console.log(conver)
             return conver
         }
