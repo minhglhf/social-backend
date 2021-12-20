@@ -117,7 +117,7 @@ export class HashtagsService {
             },
           },
           {
-            $sort: { popular: -1, hashtag: -1 },
+            $sort: { popular: -1, hashtag: 1 },
           },
           {
             $limit: TRENDING_LENGTH,
