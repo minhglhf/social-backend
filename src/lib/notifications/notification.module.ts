@@ -12,7 +12,7 @@ import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
-import { ChatGateway } from './gateway/notification.gateway';
+import { NotificationGateway } from './gateway/notification.gateway';
 import { SocketSchema, Socket } from 'src/entities/socket.entity';
 import { Notification, NotificationSchema } from 'src/entities/notification.entity';
 import { SocketModule } from '../socket/socket.module';
@@ -27,10 +27,11 @@ import { SocketModule } from '../socket/socket.module';
         ]),
         forwardRef(() => ConversationModule),
         forwardRef(() => UsersModule),
-        SocketModule
+        SocketModule,
+        // NotificationGateway
     ],
     controllers: [NotificationController],
-    providers: [NotificationService],
+    providers: [NotificationService, NotificationGateway],
     exports: [NotificationService],
 })
 export class NotificationModule { }
