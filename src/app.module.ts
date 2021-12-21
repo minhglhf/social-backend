@@ -8,6 +8,7 @@ import { ChatModule } from './lib/chat/chat.module';
 import { ChatGateway } from './lib/chat/gateway/chat.gateway';
 import { CommentsModule } from './lib/comments/comments.module';
 import { ConversationModule } from './lib/conversation/conversation.module';
+import { NotificationModule } from './lib/notifications/notification.module';
 import { PostsModule } from './lib/posts/posts.module';
 import { ReactionsModule } from './lib/reactions/reactions.module';
 import { SearchModule } from './lib/search/search.module';
@@ -28,7 +29,8 @@ import { UsersModule } from './lib/users/users.module';
     CommentsModule,
     ReactionsModule,
     ChatModule,
-    ConversationModule
+    ConversationModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

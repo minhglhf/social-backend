@@ -73,3 +73,8 @@ export enum TimeCheck {
   Month = 'month',
   Year = 'year',
 }
+
+export enum NotificationAction {
+  Like = 'like',
+  Comment = 'comment'
+}
