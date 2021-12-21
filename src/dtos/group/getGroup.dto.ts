@@ -10,5 +10,5 @@ export class SuggestedGroupOutput {
     groupName: string;
     groupBackgroundImage: string;
     totalMembers: number;
-    totalPostsLastWeek: number;
+    totalPostsThisWeek: number;
 }
