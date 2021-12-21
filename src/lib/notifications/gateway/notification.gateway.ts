@@ -20,7 +20,7 @@ import { SocketService } from 'src/lib/socket/socket.service';
 import { NotificationService } from '../notification.service';
 
 @WebSocketGateway({ namespace: '/notification' })
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private notificationService: NotificationService,
         private socketService: SocketService

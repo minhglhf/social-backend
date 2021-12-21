@@ -4,7 +4,6 @@ import { Types } from "mongoose";
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
 import { SendChat } from "src/dtos/chat/sendChat.dto";
 import { ConversationService } from "../conversation/conversation.service";
-import { ChatGateway } from "./gateway/notification.gateway";
 import { NotificationService } from "./notification.service";
 
 @ApiTags('Notification')
