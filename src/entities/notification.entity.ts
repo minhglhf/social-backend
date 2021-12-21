@@ -14,7 +14,6 @@ export class Notification {
     userRecievedAction: Types.ObjectId
     @Prop({
         type: String,
-        enum: NotificationAction,
         required: true
     })
     action: string
