@@ -10,12 +10,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
 import { AddMemberInput } from 'src/dtos/group/addMember.dto';
-import { GroupsList } from 'src/dtos/group/getGroup.dto';
+import { GroupsList, SuggestedGroupOutput } from 'src/dtos/group/getGroup.dto';
 import { Group, GroupDocument } from 'src/entities/group.entity';
 import { MapsHelper } from 'src/helpers/maps.helper';
 import { StringHandlersHelper } from 'src/helpers/stringHandler.helper';
 import { GROUPS_SUGGESSTION_LENGTH, POSTS_PER_PAGE } from 'src/utils/constants';
-import { Privacy } from 'src/utils/enums';
+import { Privacy, Time } from 'src/utils/enums';
 import { MediaFilesService } from '../mediaFiles/mediaFiles.service';
 import { PostsService } from '../posts/providers/posts.service';
 
@@ -282,18 +282,75 @@ export class GroupsService {
   }
   public async getSuggestedGroup(
     userId: string,
-  ): Promise<Partial<GroupDocument>[]> {
+  ): Promise<SuggestedGroupOutput[]> {
     try {
+      const start = new Date(
+        this.stringHandlersHelper.getStartAndEndDateWithTime(Time.Week)[0],
+      );
+      const end = new Date(
+        this.stringHandlersHelper.getStartAndEndDateWithTime(Time.Week)[1],
+      );
       const match = {
         admin_id: { $ne: Types.ObjectId(userId) },
         'member.member_id': { $ne: Types.ObjectId(userId) },
         privacy: Privacy.Public,
       };
-      return await this.groupModel
-        .find(match)
-        .select(['name', 'backgroundImage', 'totalMember'])
-        .limit(GROUPS_SUGGESSTION_LENGTH);
+      const groups = await this.groupModel.aggregate([
+        {
+          $match: match,
+        },
+        {
+          $lookup: {
+            from: 'posts',
+            let: { groupId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$group', '$$groupId'] },
+                      { $gte: ['$createdAt', start] },
+                      { $lte: ['createdAt', end] },
+                    ],
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  postsCount: { $sum: 1 },
+                },
+              },
+              { $project: { postsCount: 1 } },
+            ],
+            as: 'postsResult',
+          },
+        },
+        {
+          $addFields: {
+            totalPostsLastWeek: { $arrayElemAt: ['$postsResult', 0] },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            groupId: '$_id',
+            groupName: '$name',
+            groupBackgroundImage: '$backgroundImage',
+            totalPostsLastWeek: '$totalPostsLastWeek.postsCount',
+          },
+        },
+        {
+          $sort: { totalPostsLastWeek: -1, groupName: 1 },
+        },
+        {
+          $limit: GROUPS_SUGGESSTION_LENGTH,
+        },
+      ]);
+      return groups;
     } catch (err) {
+      console.log(err);
+
       throw new InternalServerErrorException(err);
     }
   }
