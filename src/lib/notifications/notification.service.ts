@@ -45,9 +45,19 @@ export class NotificationService {
 
     public async getNotifilist(yourId: string) {
         try {
-            const notiList = await this.notificationModel.find({
-                userRecievedAction: Types.ObjectId(yourId)
-            })
+            const perPage = 10;
+            // const skip = !pageNumber || pageNumber <= 0 ? 0 : pageNumber * perPage;
+            const notiList = await this.notificationModel
+                .find({
+                    userRecievedAction: Types.ObjectId(yourId)
+                })
+                .populate('userDoAction', ['displayName', 'avatar'])
+                .select(['-__v'])
+                .populate('userRecievedAction', ['displayName', 'avatar'])
+                .select(['-__v'])
+                .sort({ createdAt: -1 })
+                // .skip(skip)
+                .limit(perPage);
             return await notiList
         }
         catch (err) {

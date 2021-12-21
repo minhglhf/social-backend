@@ -16,12 +16,34 @@ export class NotificationController {
         private notificationService: NotificationService
     ) { }
 
-    @Post('getNotificationList')
+    @Post('sendNotifi')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+        description: 'test notifi with friend',
+    })
+    @ApiQuery({
+        type: String,
+        required: true,
+        name: 'friendId',
+        description: 'Id cua friend',
+    })
+    @ApiQuery({
+        type: String,
+        required: true,
+        name: 'action',
+        description: 'some action',
+    })
+    async sendNoti(@Request() req, @Query('friendId') friendId: string, @Query('action') action: string) {
+        const yourId = req.user.userId.toString();
+        return this.notificationService.saveToNotifiList(yourId, friendId, action);
+    }
+
+    @Get('getNotificationList')
     @UseGuards(JwtAuthGuard)
     @ApiOperation({
         description: 'getNotifications ',
     })
-    async chat(@Request() req, @Body() sendChat: SendChat) {
+    async getNoti(@Request() req) {
         const yourId = req.user.userId.toString();
         return this.notificationService.getNotifilist(yourId);
     }
