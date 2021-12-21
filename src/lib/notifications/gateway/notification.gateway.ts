@@ -35,6 +35,7 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
         // const conver: any = await this.chatService.sendChat(payload.sender, payload.friendId, payload.message)
         const socket = await this.socketService.getSocketId(payload.targetId)
         console.log(`${payload.targetId} send notification to ${client.id} with action ${payload.action}`)
+        const saveNoti = await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action)
         const notiList = await this.notificationService.getNotifilist(payload.yourId)
         if (socket) this.server.to(socket.socketId).emit('recievedNotificationList', notiList);
         // return { event: 'msgToClient', data: payload }
