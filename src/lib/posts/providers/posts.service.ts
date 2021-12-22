@@ -9,7 +9,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
 import { Model, Types } from 'mongoose';
 import { userInfo } from 'os';
-import { PostOutput, Reactions } from 'src/dtos/post/postNew.dto';
+import {
+  PostOutput,
+  Reactions,
+  TrendingPostOutput,
+} from 'src/dtos/post/postNew.dto';
 import { GroupDocument } from 'src/entities/group.entity';
 import { FileType, Post, PostDocument } from 'src/entities/post.entity';
 import { UserDocument } from 'src/entities/user.entity';
@@ -34,7 +38,7 @@ export class PostsService {
     time: string,
     hashtag: string,
     pageNumber: number,
-  ): Promise<PostOutput[]> {
+  ): Promise<TrendingPostOutput> {
     try {
       const limit = POSTS_PER_PAGE;
       const skip =
@@ -56,14 +60,21 @@ export class PostsService {
           createdAt: { $gte: start, $lte: end },
         };
       }
-      const posts = await this.postModel
-        .find(match)
-        .populate('user', ['displayName', 'avatar'])
-        .populate('group', ['name', 'backgroundImage'])
-        .sort({ createdAt: -1 });
-      return posts.map((post) =>
+      const promises = await Promise.all([
+        this.postModel
+          .find(match)
+          .populate('user', ['displayName', 'avatar'])
+          .populate('group', ['name', 'backgroundImage'])
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.hashtagsService.getPopularOfHashtag(hashtag),
+      ]);
+
+      const posts = promises[0].map((post) =>
         this.mapsHelper.mapToPostOutPut(post, currentUser),
       );
+      return { popular: promises[1], posts: posts };
     } catch (error) {
       throw new InternalServerErrorException(error);
     }

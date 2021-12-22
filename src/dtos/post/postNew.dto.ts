@@ -33,7 +33,10 @@ export class PostOutput {
   isCurrentUser: boolean;
   createdAt: string;
 }
-
+export class TrendingPostOutput {
+  popular: number;
+  posts: PostOutput[];
+}
 export class PostGroupInput {
   @ApiProperty({ type: Types.ObjectId, description: 'GroupID' })
   @IsNumber()
