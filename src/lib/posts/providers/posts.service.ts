@@ -78,14 +78,14 @@ export class PostsService {
     @Inject(forwardRef(() => GroupsService))
     private groupsService: GroupsService,
     private hashtagsService: HashtagsService,
-  ) { }
+  ) {}
 
   public async createNewPost(
     userId: string,
     description: string,
     imageOrVideos: Express.Multer.File[],
     groupId: string,
-  ): Promise<void> {
+  ): Promise<PostOutput> {
     try {
       let isPublic = true;
       if (groupId) {
@@ -131,11 +131,16 @@ export class PostsService {
       };
       if (!groupId) delete newPost.group;
       if (isPublic) {
-        await Promise.all([
+        const promises = await Promise.all([
           new this.postModel(newPost).save(),
           this.hashtagsService.addHastags(hashtags),
         ]);
-      } else await new this.postModel(newPost).save();
+        return this.mapsHelper.mapToPostOutPut(promises[0], userId);
+      } else
+        return this.mapsHelper.mapToPostOutPut(
+          await new this.postModel(newPost).save(),
+          userId,
+        );
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -310,7 +315,7 @@ export class PostsService {
     hashtagsArr: string[],
     limit: number,
     skip: number,
-    userId: string
+    userId: string,
   ) {
     try {
       if (hashtagsArr?.length === 1) {
