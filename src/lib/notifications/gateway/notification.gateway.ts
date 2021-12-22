@@ -36,15 +36,15 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
         const socket = await this.socketService.getSocketId(payload.targetId)
         console.log(`${payload.targetId} send notification to ${client.id} with action ${payload.action}`)
         await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action)
-        if (socket) this.server.to(socket.socketId).emit('recievedNotificationList', payload);
+        if (socket) client.to(socket.socketId).emit('recievedNotificationList', payload);
         // return { event: 'msgToClient', data: payload }
     }
 
     @SubscribeMessage('saveSocketId')
-    async handleJoinRoom(client: Socket, userId: string): Promise<void> {
+    async handleJoinRoom(client: Socket): Promise<void> {
         console.log('client id save to db', client.id)
         client.emit('isSavedSocketId', client.id)
-        await this.socketService.saveToSocketId(userId, client.id)
+        // await this.socketService.saveToSocketId(userId, client.id)
     }
 
     @SubscribeMessage('deleteSocketId')
@@ -58,12 +58,15 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
         this.logger.log('Init');
     }
 
-    handleConnection(client: Socket, ...args: any[]) {
-        console.log(`Client connected: ${client.id}`);
+    async handleConnection(client: Socket) {
+        console.log(`Client connected to notifi gateway: ${client.id}`);
+        console.log(client.handshake.query['userId']);
+        const userId: any = client.handshake.query['userId']
+        await this.socketService.saveToSocketId(userId, client.id)
     }
 
-    handleDisconnect(client: Socket) {
-        this.logger.log(`Client disconnected: ${client.id}`);
+    async handleDisconnect(client: Socket) {
+        this.logger.log(`Client disconnected from notifi gateway: ${client.id}`);
     }
 
 
