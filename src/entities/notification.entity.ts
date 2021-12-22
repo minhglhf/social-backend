@@ -17,6 +17,11 @@ export class Notification {
         required: true
     })
     action: string
+    @Prop({
+        type: String,
+        required: true
+    })
+    typeOfPost: string
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
