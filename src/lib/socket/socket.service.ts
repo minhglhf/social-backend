@@ -31,6 +31,18 @@ export class SocketService {
 
     public async saveToSocketId(userId: string, socketId: string) {
         try {
+            const findSocketId = await this.socketModel.find({
+                userId: Types.ObjectId(userId)
+            })
+            console.log(findSocketId.length)
+            if(findSocketId.length>0) {
+                await this.socketModel.findOneAndUpdate({
+                    userId: Types.ObjectId(userId)
+                },{
+                    socketId: socketId
+                })
+                return;
+            }
             const socket = new this.socketModel({
                 userId: Types.ObjectId(userId),
                 socketId
