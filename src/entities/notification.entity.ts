@@ -22,6 +22,12 @@ export class Notification {
         required: true
     })
     typeOfPost: string
+    @Prop({
+        type: Types.ObjectId,
+        required: true,
+        ref: 'Post'
+    })
+    postId: string
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
