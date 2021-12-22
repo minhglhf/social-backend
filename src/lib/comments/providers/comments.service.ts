@@ -18,7 +18,7 @@ export class CommentsService {
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
     private stringHandlersHelper: StringHandlersHelper,
     private postService: PostsService,
-  ) {}
+  ) { }
   public async addComment(userId, postId, comment): Promise<Comment> {
     try {
       const checkPost = await this.postService.getPost(postId);
@@ -128,7 +128,7 @@ export class CommentsService {
           parentId: null,
         })
         .populate('userId', ['displayName', 'avatar'])
-        .select(['-__v', '-postId'])
+        .select(['-__v'])
         .skip(skip)
         .limit(perPage);
       return commentParent;
@@ -151,7 +151,8 @@ export class CommentsService {
         .find({
           parentId: Types.ObjectId(commentId),
         })
-        .select(['-__v', '-createdAt', '-updatedAt', '-postId'])
+        .populate('userId', ['displayName', 'avatar'])
+        .select(['-__v'])
         .skip(skip)
         .limit(perPage);
       return commentReply;

@@ -37,7 +37,7 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
         const socket = await this.socketService.getSocketId(payload.targetId)
         console.log(`${payload.targetId} send notification to ${client.id} with action ${payload.action}`)
         // console.log(userInfoInSocketTable)
-        await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action, payload.typeOfPost)
+        await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action, payload.typeOfPost, payload.postId)
         if (socket) client.to(socket.socketId).emit('recievedNotificationList', { payload, userDoAction: userDoAction.userId, timeDoAction: payload.timeDoAction, postId: payload.postId });
         // return { event: 'msgToClient', data: payload }
     }
