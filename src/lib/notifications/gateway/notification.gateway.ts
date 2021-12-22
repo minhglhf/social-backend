@@ -23,7 +23,7 @@ import { NotificationService } from '../notification.service';
 export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private notificationService: NotificationService,
-        private socketService: SocketService
+        private socketService: SocketService,
     ) { }
 
     @WebSocketServer() server: Server;
@@ -31,12 +31,14 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
 
     // @UseGuards(JwtAuthGuard)
     @SubscribeMessage('sendNotification')
-    async handleMessage(client: Socket, payload: { yourId: string, targetId: string, action: string }): Promise<void> {
+    async handleMessage(client: Socket, payload: { yourId: string, targetId: string, action: string, typeOfPost: string, timeDoAction: string, postId: string }): Promise<void> {
         // const conver: any = await this.chatService.sendChat(payload.sender, payload.friendId, payload.message)
+        const userDoAction = await this.socketService.getSocketId(payload.yourId)
         const socket = await this.socketService.getSocketId(payload.targetId)
         console.log(`${payload.targetId} send notification to ${client.id} with action ${payload.action}`)
-        await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action)
-        if (socket) client.to(socket.socketId).emit('recievedNotificationList', payload);
+        // console.log(userInfoInSocketTable)
+        await this.notificationService.saveToNotifiList(payload.yourId, payload.targetId, payload.action, payload.typeOfPost)
+        if (socket) client.to(socket.socketId).emit('recievedNotificationList', { payload, userDoAction: userDoAction.userId, timeDoAction: payload.timeDoAction, postId: payload.postId });
         // return { event: 'msgToClient', data: payload }
     }
 

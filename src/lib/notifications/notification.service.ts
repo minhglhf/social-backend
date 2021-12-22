@@ -29,12 +29,13 @@ export class NotificationService {
         // private conversationService: ConversationService
     ) { }
 
-    public async saveToNotifiList(yourId: string, targetId: string, action: string) {
+    public async saveToNotifiList(yourId: string, targetId: string, action: string, typeOfPost: string) {
         try {
             const save = new this.notificationModel({
                 userDoAction: Types.ObjectId(yourId),
                 userRecievedAction: Types.ObjectId(targetId),
-                action
+                action,
+                typeOfPost
             })
             return await save.save()
         }
