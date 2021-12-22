@@ -32,9 +32,15 @@ export class NotificationController {
         name: 'action',
         description: 'some action',
     })
-    async sendNoti(@Request() req, @Query('friendId') friendId: string, @Query('action') action: string) {
+    @ApiQuery({
+        type: String,
+        required: true,
+        name: 'typeOfPost',
+        description: 'not important',
+    })
+    async sendNoti(@Request() req, @Query('friendId') friendId: string, @Query('action') action: string, @Query('typeOfPost') type: string) {
         const yourId = req.user.userId.toString();
-        return this.notificationService.saveToNotifiList(yourId, friendId, action);
+        return this.notificationService.saveToNotifiList(yourId, friendId, action, type);
     }
 
     @Get('getNotificationList')

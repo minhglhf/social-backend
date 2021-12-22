@@ -35,10 +35,10 @@ export class SocketService {
                 userId: Types.ObjectId(userId)
             })
             console.log(findSocketId.length)
-            if(findSocketId.length>0) {
+            if (findSocketId.length > 0) {
                 await this.socketModel.findOneAndUpdate({
                     userId: Types.ObjectId(userId)
-                },{
+                }, {
                     socketId: socketId
                 })
                 return;
@@ -70,6 +70,8 @@ export class SocketService {
             const skid = await this.socketModel.findOne({
                 userId: Types.ObjectId(userId)
             })
+                .populate('userId', ['displayName', 'avatar'])
+
             return skid
         }
         catch (err) {
