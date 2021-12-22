@@ -68,7 +68,7 @@ export class PostsService {
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
-        this.hashtagsService.getPopularOfHashtag(hashtag),
+        this.postModel.countDocuments(match),
       ]);
 
       const posts = promises[0].map((post) =>
@@ -170,13 +170,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-      case PostLimit.Group:
-        return this.getPostsGroup(pageNumber, currentUser, groupId);
-      case PostLimit.Profile:
-        return this.getPostsProfile(pageNumber, currentUser);
-      case PostLimit.NewsFeed:
-      default:
-        return this.getPostsNewFeed(pageNumber, currentUser);
+    case PostLimit.Group:
+      return this.getPostsGroup(pageNumber, currentUser, groupId);
+    case PostLimit.Profile:
+      return this.getPostsProfile(pageNumber, currentUser);
+    case PostLimit.NewsFeed:
+    default:
+      return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -246,28 +246,28 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-      case PostLimit.Group:
-        match = { group: Types.ObjectId(groupId) };
-        if (!groupId)
-          match = {
-            user: Types.ObjectId(currentUser),
-            group: { $exists: true },
-          };
-        break;
-      case PostLimit.Profile:
+    case PostLimit.Group:
+      match = { group: Types.ObjectId(groupId) };
+      if (!groupId)
         match = {
           user: Types.ObjectId(currentUser),
-          group: { $exists: false },
+          group: { $exists: true },
         };
-        break;
-      case PostLimit.NewsFeed:
-      default:
-        match = {
-          $or: [
-            { user: { $in: userObjectIds }, group: { $exists: false } },
-            { user: Types.ObjectId(currentUser), group: { $exists: true } },
-          ],
-        };
+      break;
+    case PostLimit.Profile:
+      match = {
+        user: Types.ObjectId(currentUser),
+        group: { $exists: false },
+      };
+      break;
+    case PostLimit.NewsFeed:
+    default:
+      match = {
+        $or: [
+          { user: { $in: userObjectIds }, group: { $exists: false } },
+          { user: Types.ObjectId(currentUser), group: { $exists: true } },
+        ],
+      };
     }
     const posts = await this.postModel
       .find(match)
