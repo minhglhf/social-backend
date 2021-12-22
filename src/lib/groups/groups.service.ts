@@ -285,10 +285,16 @@ export class GroupsService {
   ): Promise<SuggestedGroupOutput[]> {
     try {
       const start = new Date(
-        this.stringHandlersHelper.getStartAndEndDateWithTime(Time.Week)[0],
+        this.stringHandlersHelper.getStartAndEndDateWithTime(
+          Time.Week,
+          true,
+        )[0],
       );
       const end = new Date(
-        this.stringHandlersHelper.getStartAndEndDateWithTime(Time.Week)[1],
+        this.stringHandlersHelper.getStartAndEndDateWithTime(
+          Time.Week,
+          true,
+        )[1],
       );
       const match = {
         admin_id: { $ne: Types.ObjectId(userId) },
@@ -318,6 +324,7 @@ export class GroupsService {
               {
                 $group: {
                   _id: null,
+
                   postsCount: { $sum: 1 },
                 },
               },
@@ -328,7 +335,7 @@ export class GroupsService {
         },
         {
           $addFields: {
-            totalPostsLastWeek: { $arrayElemAt: ['$postsResult', 0] },
+            totalPostsThisWeek: { $arrayElemAt: ['$postsResult', 0] },
           },
         },
         {
@@ -337,11 +344,13 @@ export class GroupsService {
             groupId: '$_id',
             groupName: '$name',
             groupBackgroundImage: '$backgroundImage',
-            totalPostsLastWeek: '$totalPostsLastWeek.postsCount',
+            totalPostsThisWeek: {
+              $ifNull: ['$totalPostsThisWeek.postsCount', 0],
+            },
           },
         },
         {
-          $sort: { totalPostsLastWeek: -1, groupName: 1 },
+          $sort: { totalPostsThisWeek: -1, groupName: 1 },
         },
         {
           $limit: GROUPS_SUGGESSTION_LENGTH,

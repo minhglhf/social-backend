@@ -95,7 +95,7 @@ export class ConversationService {
             // .populate('messages.chatId', ['author', 'content', 'createdAt'])
             // .select(['messages._id'])
             // /.populate('messages.chatId.author', ['displayName', 'avatar'])
-            console.log(conver)
+            // console.log(conver)
             return conver
         }
         catch (err) {

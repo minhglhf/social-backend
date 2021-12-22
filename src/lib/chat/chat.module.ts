@@ -9,6 +9,7 @@ import { FollowingsModule } from '../followings/followings.module';
 import { GroupsModule } from '../groups/groups.module';
 import { HashtagsModule } from '../hashtags/hashtags.module';
 import { MediaFilesModule } from '../mediaFiles/mediaFiles.module';
+import { SocketModule } from '../socket/socket.module';
 import { UsersModule } from '../users/users.module';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
@@ -23,7 +24,8 @@ import { ChatGateway } from './gateway/chat.gateway';
             },
         ]),
         forwardRef(() => ConversationModule),
-        forwardRef(() => UsersModule)
+        forwardRef(() => UsersModule),
+        SocketModule
     ],
     controllers: [ChatController],
     providers: [ChatService, ChatGateway],

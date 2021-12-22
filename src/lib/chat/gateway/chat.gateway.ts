@@ -17,12 +17,14 @@ import { TypeInformation } from 'src/utils/enums';
 import { ConversationService } from 'src/lib/conversation/conversation.service';
 import { ChatService } from '../chat.service';
 import { Types } from 'mongoose';
+import { SocketService } from 'src/lib/socket/socket.service';
 
-@WebSocketGateway({ namespace: '/chat' })
+@WebSocketGateway()
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private conversationService: ConversationService,
-        private chatService: ChatService
+        private chatService: ChatService,
+        private socketService: SocketService
     ) { }
 
     @WebSocketServer() server: Server;
@@ -31,9 +33,10 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     // @UseGuards(JwtAuthGuard)
     @SubscribeMessage('chatToServer')
     async handleMessage(client: Socket, payload: { sender: string, friendId: string, message: string, room: string }): Promise<void> {
-        const conver: any = await this.chatService.sendChat(payload.sender, payload.friendId, payload.message)
-        console.log(conver)
-        this.server.to(payload.room).emit('chatToClient', payload);
+        await this.chatService.sendChat(payload.sender, payload.friendId, payload.message)
+       const socket = await this.socketService.getSocketId(payload.friendId)
+       console.log(`${client.id} send chat to ${socket.socketId}`)
+        client.to(socket.socketId).emit('chatToClient', payload);
         // return { event: 'msgToClient', data: payload }
     }
 
@@ -56,11 +59,11 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
 
     handleConnection(client: Socket, ...args: any[]) {
-        console.log(`Client connected: ${client.id}`);
+        console.log(`Client connected to chat gateway: ${client.id}`);
     }
 
     handleDisconnect(client: Socket) {
-        this.logger.log(`Client disconnected: ${client.id}`);
+        this.logger.log(`Client disconnected from chat gateway: ${client.id}`);
     }
 
 
