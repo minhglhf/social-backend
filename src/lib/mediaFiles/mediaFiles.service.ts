@@ -82,9 +82,8 @@ export class MediaFilesService {
         ? (pageNumber = 0)
         : pageNumber * MEDIA_FILES_PER_PAGE;
     const match = groupId
-      ? { user: Types.ObjectId(userId), group: Types.ObjectId(groupId) }
+      ? { group: Types.ObjectId(groupId) }
       : { user: Types.ObjectId(userId), group: { $exists: false } };
-
     switch (type) {
     case File.Video:
       (match as any).type = File.Video;
