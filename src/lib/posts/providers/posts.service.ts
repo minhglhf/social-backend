@@ -140,18 +140,20 @@ export class PostsService {
         },
         comments: 0,
       };
+      let postId;
       if (!groupId) delete newPost.group;
       if (isPublic) {
         const promises = await Promise.all([
           new this.postModel(newPost).save(),
           this.hashtagsService.addHastags(hashtags),
         ]);
-        return this.mapsHelper.mapToPostOutPut(promises[0], userId);
-      } else
-        return this.mapsHelper.mapToPostOutPut(
-          await new this.postModel(newPost).save(),
-          userId,
-        );
+        postId = promises[0]._id;
+      } else postId = (await new this.postModel(newPost).save())._id;
+      const post = await this.postModel
+        .findById(postId)
+        .populate('user', ['displayName', 'avatar'])
+        .populate('group', ['name', 'backgroundImage']);
+      return this.mapsHelper.mapToPostOutPut(post, userId);
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
@@ -170,13 +172,13 @@ export class PostsService {
     groupId: string,
   ): Promise<PostOutput[]> {
     switch (limit) {
-    case PostLimit.Group:
-      return this.getPostsGroup(pageNumber, currentUser, groupId);
-    case PostLimit.Profile:
-      return this.getPostsProfile(pageNumber, currentUser);
-    case PostLimit.NewsFeed:
-    default:
-      return this.getPostsNewFeed(pageNumber, currentUser);
+      case PostLimit.Group:
+        return this.getPostsGroup(pageNumber, currentUser, groupId);
+      case PostLimit.Profile:
+        return this.getPostsProfile(pageNumber, currentUser);
+      case PostLimit.NewsFeed:
+      default:
+        return this.getPostsNewFeed(pageNumber, currentUser);
     }
   }
 
@@ -246,28 +248,28 @@ export class PostsService {
     const userObjectIds = followings.map((i) => Types.ObjectId(i));
     let match = {};
     switch (option) {
-    case PostLimit.Group:
-      match = { group: Types.ObjectId(groupId) };
-      if (!groupId)
+      case PostLimit.Group:
+        match = { group: Types.ObjectId(groupId) };
+        if (!groupId)
+          match = {
+            user: Types.ObjectId(currentUser),
+            group: { $exists: true },
+          };
+        break;
+      case PostLimit.Profile:
         match = {
           user: Types.ObjectId(currentUser),
-          group: { $exists: true },
+          group: { $exists: false },
         };
-      break;
-    case PostLimit.Profile:
-      match = {
-        user: Types.ObjectId(currentUser),
-        group: { $exists: false },
-      };
-      break;
-    case PostLimit.NewsFeed:
-    default:
-      match = {
-        $or: [
-          { user: { $in: userObjectIds }, group: { $exists: false } },
-          { user: Types.ObjectId(currentUser), group: { $exists: true } },
-        ],
-      };
+        break;
+      case PostLimit.NewsFeed:
+      default:
+        match = {
+          $or: [
+            { user: { $in: userObjectIds }, group: { $exists: false } },
+            { user: Types.ObjectId(currentUser), group: { $exists: true } },
+          ],
+        };
     }
     const posts = await this.postModel
       .find(match)
