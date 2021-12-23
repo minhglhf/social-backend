@@ -104,7 +104,7 @@ export class GroupsService {
         return group;
       }
       if (group?.privacy === 'public') {
-        const isJoined = await this.IsMemberOfGroup(yourId, groupId);
+        const isJoined = await this.IsMemberOfGroup1(yourId, groupId);
         return {
           isJoined,
           group,
@@ -113,7 +113,7 @@ export class GroupsService {
       if (group?.privacy === 'private') {
         if (String(group.admin_id) === String(yourId)) return group;
         else {
-          const isJoined = await this.IsMemberOfGroup(yourId, groupId);
+          const isJoined = await this.IsMemberOfGroup1(yourId, groupId);
           if (isJoined) {
             return {
               isJoined,
@@ -382,6 +382,32 @@ export class GroupsService {
         ],
       };
       return await this.groupModel.findOne(match);
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  public async IsMemberOfGroup1(
+    userId: string,
+    groupId: string,
+  ): Promise<boolean> {
+    try {
+      const match = {
+        $and: [
+          {
+            _id: Types.ObjectId(groupId),
+          },
+          {
+            $or: [
+              { admin_id: Types.ObjectId(userId.toString()) },
+              { 'member.member_id': Types.ObjectId(userId) },
+            ],
+          },
+        ],
+      };
+      const member = await this.groupModel.findOne(match);
+      if (member) return true;
+      return false;
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
