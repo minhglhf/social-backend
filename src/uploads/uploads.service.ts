@@ -31,7 +31,7 @@ export class UploadsService {
   ): Promise<string> {
     try {
       const image = fs.readFileSync(file.path.toString());
-
+      
       if (fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }

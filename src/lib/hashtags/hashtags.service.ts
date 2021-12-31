@@ -58,6 +58,15 @@ export class HashtagsService {
       throw new InternalServerErrorException(error);
     }
   }
+  public async getPopularOfHashtag(hashtag: string): Promise<number> {
+    try {
+      const popular = (await this.hashtagModel.findOne({ hashtag: hashtag }))
+        ?.popular;
+      return popular ? popular : 0;
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
   public async getHashtag(hashtag: string) {
     try {
       const hashtagInfo = await this.hashtagModel
