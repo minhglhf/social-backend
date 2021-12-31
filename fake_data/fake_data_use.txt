@@ -1,0 +1,6 @@
+fake data
+sử dụng nodejs, module faker,mongodb.
+bài viết tạo ngẫu nhiên trong khoảng 200 ngày.
+react, comment tạo ngẫu nhiên trong khoảng 4 giờ sau bài viết.
+các số liệu điều chỉnh ở cuối file (như số lượng user,số lượng post,...)
+password mặc định là Password_00.
